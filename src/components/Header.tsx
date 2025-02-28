@@ -20,7 +20,7 @@ const Header = () => {
       }
     };
 
-    // Check if user is logged in from localStorage
+    // Mock authentication check - replaces Supabase auth
     const checkUserAuth = () => {
       const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
       const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";

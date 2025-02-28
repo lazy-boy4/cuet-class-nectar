@@ -7,7 +7,7 @@ const CTA = () => {
   return (
     <section
       id="cta"
-      className="relative overflow-hidden bg-cuet-dark py-24 sm:py-32"
+      className="relative py-24 sm:py-32 bg-cuet-dark"
     >
       <div className="container mx-auto px-4">
         <div

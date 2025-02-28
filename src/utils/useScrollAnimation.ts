@@ -20,11 +20,11 @@ export const useScrollAnimation = () => {
       });
     };
     
-    // Run once immediately
+    // Run once immediately after component mounts
     setTimeout(handleScroll, 300);
     
-    // Then add scroll listener
-    window.addEventListener("scroll", handleScroll);
+    // Add scroll listener
+    window.addEventListener("scroll", handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener("scroll", handleScroll);

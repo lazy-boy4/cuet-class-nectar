@@ -1,69 +1,48 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
-import { Mail, AlertCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ScrollToTop from "@/components/ScrollToTop";
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { ArrowRight } from "lucide-react";
 
 const ForgotPassword = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Set the page title
   useEffect(() => {
     document.title = "Forgot Password - CUET Class Management System";
   }, []);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate email
-    if (!email) {
-      setError("Email is required");
-      return;
-    }
-    
-    if (!email.endsWith("@cuet.ac.bd") && !email.endsWith("@student.cuet.ac.bd")) {
-      setError("Please enter a valid CUET email address");
-      return;
-    }
-    
-    setError("");
     setIsLoading(true);
-    
+
     try {
-      // Send password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      // Frontend-only mock password reset
+      // In a real app, this would be a request to your backend
+      console.log("Password reset requested for:", email);
       
-      if (error) throw error;
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      setIsSubmitted(true);
+      // Show success state
+      setIsSuccess(true);
+      
       toast({
-        title: "Reset link sent",
-        description: "Check your email for the password reset link.",
+        title: "Password reset email sent",
+        description: "Check your inbox for further instructions.",
         duration: 5000,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Password reset error:", error);
       toast({
-        title: "Request failed",
-        description: error.message || "Failed to send reset link. Please try again.",
+        title: "Error",
+        description: "Failed to send password reset email. Please try again.",
         variant: "destructive",
-        duration: 5000,
+        duration: 3000,
       });
     } finally {
       setIsLoading(false);
@@ -73,77 +52,67 @@ const ForgotPassword = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 bg-cuet-navy">
+      <main className="flex-1 bg-cuet-navy pt-16">
         <div className="container mx-auto px-4 py-12">
-          <div className="reveal mx-auto max-w-md">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-white md:text-4xl">Forgot Password</h1>
-              <p className="mt-2 text-white/70">
-                We'll send you a link to reset your password
-              </p>
-            </div>
-            
-            <div className="glass-card overflow-hidden p-6">
-              {isSubmitted ? (
-                <div className="text-center">
-                  <div className="mb-4 flex justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-                      <Mail size={32} className="text-green-500" />
-                    </div>
-                  </div>
-                  <h2 className="mb-2 text-xl font-semibold text-white">Check Your Email</h2>
-                  <p className="mb-6 text-white/70">
-                    We've sent a password reset link to <span className="font-medium text-white">{email}</span>
+          <div className="mx-auto max-w-md">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
+              <div className="mb-6 text-center">
+                <h1 className="text-3xl font-bold text-white">Forgot Password</h1>
+                <p className="mt-2 text-white/70">
+                  Enter your email to receive a password reset link
+                </p>
+              </div>
+
+              {isSuccess ? (
+                <div className="rounded-md bg-green-500/10 p-6 text-center">
+                  <h3 className="mb-2 text-xl font-medium text-green-400">Email Sent!</h3>
+                  <p className="mb-4 text-white/70">
+                    We've sent a password reset link to your email. Please check your inbox and follow the instructions.
                   </p>
-                  <div className="flex flex-col space-y-3">
-                    <Link
-                      to="/login"
-                      className="rounded-md bg-[#1E88E5] py-2 text-center font-medium text-white transition-all hover:bg-[#1976D2]"
-                    >
-                      Back to Login
-                    </Link>
-                  </div>
+                  <Link
+                    to="/login"
+                    className="group inline-flex items-center justify-center space-x-2 rounded-md bg-white/10 px-4 py-2 text-white transition-all hover:bg-white/20"
+                  >
+                    <span>Back to Login</span>
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform duration-300 group-hover:translate-x-1"
+                    />
+                  </Link>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Email */}
-                  <div>
-                    <label htmlFor="email" className="mb-1 block text-sm text-white/90">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-white/70">
                       CUET Email
                     </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-white/60">
-                        <Mail size={16} />
-                      </span>
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="your.email@cuet.ac.bd"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={`w-full rounded-md border ${error ? 'border-red-500' : 'border-white/10'} bg-white/5 px-10 py-2 text-white placeholder-white/30 focus:border-white/20 focus:outline-none`}
-                      />
-                    </div>
-                    {error && (
-                      <p className="mt-1 flex items-center text-xs text-red-400">
-                        <AlertCircle size={12} className="mr-1" />
-                        {error}
-                      </p>
-                    )}
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@cuet.ac.bd"
+                      required
+                      className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </div>
 
-                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="mt-6 w-full rounded-md bg-[#1E88E5] py-2 font-medium text-white transition-all hover:bg-[#1976D2] focus:outline-none focus:ring-2 focus:ring-[#1E88E5]/70 focus:ring-offset-2 disabled:opacity-50"
+                    className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
                   >
-                    {isLoading ? "Sending..." : "Send Reset Link"}
+                    <span>{isLoading ? "Sending..." : "Send Reset Link"}</span>
+                    {!isLoading && (
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform duration-300 group-hover:translate-x-1"
+                      />
+                    )}
                   </button>
-                  
-                  <div className="pt-2 text-center">
-                    <Link to="/login" className="inline-flex items-center text-sm text-white/70 hover:text-white">
-                      <ArrowLeft size={16} className="mr-1" />
+
+                  <div className="text-center">
+                    <Link to="/login" className="text-sm text-blue-400 hover:text-blue-300">
                       Back to login
                     </Link>
                   </div>
@@ -154,7 +123,6 @@ const ForgotPassword = () => {
         </div>
       </main>
       <Footer />
-      <ScrollToTop />
     </div>
   );
 };
