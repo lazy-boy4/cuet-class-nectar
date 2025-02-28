@@ -1,5 +1,7 @@
-import { useLocation } from "react-router-dom";
+
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import { Home, ArrowLeft } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
@@ -12,13 +14,26 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-cuet-navy px-4 text-center">
+      <div className="glass-card mx-auto max-w-md p-8">
+        <h1 className="mb-2 text-6xl font-bold text-white">404</h1>
+        <p className="mb-8 text-xl text-white/80">Oops! Page not found</p>
+        <div className="flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center space-x-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white backdrop-blur-sm transition-all hover:bg-white/10"
+          >
+            <Home size={18} />
+            <span>Return Home</span>
+          </Link>
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center justify-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-white transition-all hover:bg-blue-700"
+          >
+            <ArrowLeft size={18} />
+            <span>Go Back</span>
+          </button>
+        </div>
       </div>
     </div>
   );
