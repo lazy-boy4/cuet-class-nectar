@@ -1,31 +1,8 @@
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { ArrowRight } from "lucide-react";
 
 const CTA = () => {
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("active");
-          }
-        });
-      },
-      {
-        threshold: 0.1,
-      }
-    );
-
-    if (sectionRef.current) observer.observe(sectionRef.current);
-
-    return () => {
-      if (sectionRef.current) observer.unobserve(sectionRef.current);
-    };
-  }, []);
-
   return (
     <section
       id="cta"
@@ -33,7 +10,6 @@ const CTA = () => {
     >
       <div className="container mx-auto px-4">
         <div
-          ref={sectionRef}
           className="reveal mx-auto max-w-3xl rounded-2xl border border-white/10 bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-8 text-center backdrop-blur-sm md:p-12"
         >
           <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">
@@ -43,7 +19,7 @@ const CTA = () => {
             Join thousands of students and faculty already using our platform to streamline their academic journey.
           </p>
           <a
-            href="#signup"
+            href="/signup"
             className="group inline-flex items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-3 text-white transition-all duration-300 hover:shadow-lg"
           >
             <span>Sign Up Now</span>

@@ -10,7 +10,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { useScrollAnimation } from "@/utils/useScrollAnimation";
 
 const Index = () => {
-  // Use the scroll animation hook
+  // Initialize scroll animation
   useScrollAnimation();
 
   // Set the page title

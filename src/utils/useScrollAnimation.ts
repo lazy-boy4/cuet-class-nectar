@@ -6,20 +6,22 @@ export const useScrollAnimation = () => {
     const handleScroll = () => {
       const reveals = document.querySelectorAll(".reveal");
       
-      for (let i = 0; i < reveals.length; i++) {
+      reveals.forEach(element => {
         const windowHeight = window.innerHeight;
-        const elementTop = reveals[i].getBoundingClientRect().top;
+        const elementTop = element.getBoundingClientRect().top;
         const elementVisible = 150;
         
         if (elementTop < windowHeight - elementVisible) {
-          reveals[i].classList.add("active");
+          element.classList.add("active");
         }
-      }
+      });
     };
     
+    // Run once immediately
+    setTimeout(handleScroll, 100);
+    
+    // Then add scroll listener
     window.addEventListener("scroll", handleScroll);
-    // Initial check on load
-    handleScroll();
     
     return () => {
       window.removeEventListener("scroll", handleScroll);
