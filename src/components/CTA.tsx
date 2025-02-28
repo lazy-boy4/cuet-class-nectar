@@ -1,6 +1,7 @@
 
 import React from "react";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTA = () => {
   return (
@@ -18,8 +19,8 @@ const CTA = () => {
           <p className="mb-8 text-lg text-white/70">
             Join thousands of students and faculty already using our platform to streamline their academic journey.
           </p>
-          <a
-            href="/signup"
+          <Link
+            to="/signup"
             className="group inline-flex items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-3 text-white transition-all duration-300 hover:shadow-lg"
           >
             <span>Sign Up Now</span>
@@ -27,7 +28,7 @@ const CTA = () => {
               size={18}
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

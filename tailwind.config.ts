@@ -1,15 +1,13 @@
 
-import type { Config } from "tailwindcss";
+import { type Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 export default {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  prefix: "",
   theme: {
     container: {
       center: true,
@@ -19,22 +17,12 @@ export default {
       },
     },
     extend: {
-      fontFamily: {
-        sans: ["Inter", "sans-serif"],
-      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        cuet: {
-          blue: "#1a365d",
-          gold: "#b8860b",
-          navy: "#0a192f",
-          dark: "#121212",
-          light: "#f8f8f8",
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -63,11 +51,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        cuet: {
+          navy: "#0f172a",
+          dark: "#020617",
+          blue: "#3b82f6",
+          gold: "#facc15"
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["Inter", ...fontFamily.sans],
       },
       keyframes: {
         "accordion-down": {
@@ -78,46 +75,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        fadeIn: {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        slideInRight: {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        slideInLeft: {
-          "0%": { transform: "translateX(-100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        pulse: {
-          "0%, 100%": {
-            opacity: "1",
-          },
-          "50%": {
-            opacity: "0.8",
-          },
-        },
-        float: {
-          "0%, 100%": {
-            transform: "translateY(0)",
-          },
-          "50%": {
-            transform: "translateY(-10px)",
-          },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        fadeIn: "fadeIn 0.6s ease-out forwards",
-        slideInRight: "slideInRight 0.6s ease-out forwards",
-        slideInLeft: "slideInLeft 0.6s ease-out forwards",
-        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        float: "float 3s ease-in-out infinite",
-      },
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },
     },
   },

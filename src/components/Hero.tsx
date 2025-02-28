@@ -1,6 +1,7 @@
 
 import React from "react";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -26,8 +27,8 @@ const Hero = () => {
           University of Engineering and Technology
         </p>
         <div className="mx-auto flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="group flex w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] px-8 py-3 text-white transition-all duration-300 hover:from-[#1d4ed8] hover:to-[#1e40af] sm:w-auto"
           >
             <span>Get Started</span>
@@ -35,7 +36,7 @@ const Hero = () => {
               size={16}
               className="transition-transform duration-300 group-hover:translate-x-1"
             />
-          </a>
+          </Link>
           <a
             href="#about"
             className="w-full rounded-lg border border-white/20 bg-white/5 px-8 py-3 text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 sm:w-auto"

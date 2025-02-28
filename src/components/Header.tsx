@@ -1,18 +1,10 @@
 
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Menu, X, ChevronRight, LogOut } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 const Header = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -28,25 +20,26 @@ const Header = () => {
       }
     };
 
-    // Check if user is logged in
-    const checkUserAuth = async () => {
-      const { data } = await supabase.auth.getSession();
+    // Check if user is logged in from localStorage
+    const checkUserAuth = () => {
       const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+      const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";
       
-      setIsLoggedIn(!!data.session);
+      setIsLoggedIn(storedLoginStatus);
       setUserRole(storedRole);
     };
 
     checkUserAuth();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [location.pathname]);
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-      await supabase.auth.signOut();
       localStorage.removeItem("userRole");
+      localStorage.removeItem("isLoggedIn");
       sessionStorage.removeItem("userRole");
+      sessionStorage.removeItem("isLoggedIn");
       setIsLoggedIn(false);
       setUserRole(null);
       
@@ -56,7 +49,8 @@ const Header = () => {
         duration: 3000,
       });
       
-      navigate("/");
+      // Navigate to home page
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -114,15 +108,15 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link to="/#about" className="navbar-link">
+              <a href="#about" className="navbar-link">
                 About
-              </Link>
-              <Link to="/#features" className="navbar-link">
+              </a>
+              <a href="#features" className="navbar-link">
                 Features
-              </Link>
-              <Link to="/#contact" className="navbar-link">
+              </a>
+              <a href="#contact" className="navbar-link">
                 Contact
-              </Link>
+              </a>
               <div className="flex space-x-3">
                 <Link to="/login" className="btn-secondary">
                   Log In
@@ -198,30 +192,30 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link
-                to="/#about"
+              <a
+                href="#about"
                 className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span>About</span>
                 <ChevronRight size={16} />
-              </Link>
-              <Link
-                to="/#features"
+              </a>
+              <a
+                href="#features"
                 className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span>Features</span>
                 <ChevronRight size={16} />
-              </Link>
-              <Link
-                to="/#contact"
+              </a>
+              <a
+                href="#contact"
                 className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <span>Contact</span>
                 <ChevronRight size={16} />
-              </Link>
+              </a>
               <div className="flex flex-col space-y-3 pt-2">
                 <Link
                   to="/login"
