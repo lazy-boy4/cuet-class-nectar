@@ -1,9 +1,19 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CTA = () => {
+  useEffect(() => {
+    // Force reveal animation immediately for this component
+    const revealElement = document.querySelector("#cta .reveal");
+    if (revealElement) {
+      setTimeout(() => {
+        revealElement.classList.add("active");
+      }, 100);
+    }
+  }, []);
+
   return (
     <section
       id="cta"

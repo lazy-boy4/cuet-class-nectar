@@ -1,0 +1,56 @@
+
+import { Notice } from "@/types";
+
+export const mockNotices: Notice[] = [
+  {
+    id: "notice-1",
+    title: "Welcome to the New Semester",
+    content: "Welcome to the Fall 2023 semester! We're excited to have you all back. Please check your class schedules and make sure to attend all classes from the first day.",
+    createdAt: "2023-09-01T08:00:00Z",
+    createdBy: "user-1",
+    creatorName: "Admin User",
+    isGlobal: true,
+  },
+  {
+    id: "notice-2",
+    title: "CSE-101 Class Postponed",
+    content: "The CSE-101 class scheduled for September 5th is postponed due to faculty meeting. The class will be held on September 7th instead.",
+    createdAt: "2023-09-03T10:30:00Z",
+    createdBy: "user-2",
+    creatorName: "Dr. Khalid Hassan",
+    classId: "class-1",
+    className: "CSE-101-A-2023",
+    isGlobal: false,
+  },
+  {
+    id: "notice-3",
+    title: "EEE-101 Assignment Submission",
+    content: "Please submit your EEE-101 assignments by September 15th. Late submissions will not be accepted without valid reasons.",
+    createdAt: "2023-09-05T14:15:00Z",
+    createdBy: "user-3",
+    creatorName: "Dr. Fahmida Akter",
+    classId: "class-3",
+    className: "EEE-101-A-2023",
+    isGlobal: false,
+  },
+  {
+    id: "notice-4",
+    title: "Library Hours Extended",
+    content: "The university library will now be open until 10 PM during weekdays to accommodate students preparing for midterm examinations.",
+    createdAt: "2023-09-10T09:45:00Z",
+    createdBy: "user-1",
+    creatorName: "Admin User",
+    isGlobal: true,
+  },
+  {
+    id: "notice-5",
+    title: "CSE-102 Lab Schedule",
+    content: "The CSE-102 lab sessions will start from next week. Please check the lab group assignments posted on the department notice board.",
+    createdAt: "2023-09-12T11:20:00Z",
+    createdBy: "user-9",
+    creatorName: "Dr. Rahim Uddin",
+    classId: "class-2",
+    className: "CSE-102-A-2023",
+    isGlobal: false,
+  },
+];
