@@ -87,7 +87,7 @@ const AssignTeachers = () => {
       classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
       
     const departmentMatch = departmentFilter
-      ? classItem.departmentId === departmentFilter // Fixed: Changed from department to departmentId
+      ? classItem.departmentId === departmentFilter
       : true;
       
     return searchMatch && departmentMatch;
@@ -203,7 +203,7 @@ const AssignTeachers = () => {
       ? {
           courseCode: classItem.courseCode,
           courseName: classItem.courseName,
-          departmentId: classItem.departmentId, // Fixed: Changed from department to departmentId
+          departmentId: classItem.departmentId,
           session: classItem.session,
           section: classItem.section,
         }
@@ -229,13 +229,15 @@ const AssignTeachers = () => {
     >
       {/* Search and Add Button */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <Input
-          placeholder="Search assignments..."
-          value={teacherSearchTerm}
-          onChange={(e) => setTeacherSearchTerm(e.target.value)}
-          className="max-w-xs border-white/10"
-          startIcon={<Search className="h-4 w-4" />}
-        />
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+          <Input
+            placeholder="Search assignments..."
+            value={teacherSearchTerm}
+            onChange={(e) => setTeacherSearchTerm(e.target.value)}
+            className="pl-10 border-white/10"
+          />
+        </div>
         
         <Button onClick={handleAddAssignment}>
           <Plus className="mr-2 h-4 w-4" />
@@ -398,7 +400,7 @@ const AssignTeachers = () => {
                   <SelectContent>
                     {classes.length > 0 ? (
                       classes.map((classItem: Class) => {
-                        const departmentName = getDepartmentName(classItem.departmentId); // Fixed: Changed from department to departmentId
+                        const departmentName = getDepartmentName(classItem.departmentId);
                         return (
                           <SelectItem key={classItem.id} value={classItem.id}>
                             {classItem.courseCode} - {departmentName}, {classItem.session}

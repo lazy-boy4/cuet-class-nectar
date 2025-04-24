@@ -45,7 +45,7 @@ const ClassDetails = () => {
   
   // Calculate attendance percentage
   const totalClasses = classAttendance.length;
-  const attendedClasses = classAttendance.filter(a => a.status === "present").length; // Fixed: Changed from isPresent to status === "present"
+  const attendedClasses = classAttendance.filter(a => a.status === "present").length;
   const attendancePercentage = totalClasses > 0 
     ? Math.round((attendedClasses / totalClasses) * 100)
     : 0;
@@ -282,7 +282,7 @@ const ClassDetails = () => {
                           </span>
                         </TableCell>
                         <TableCell className="text-white/70">
-                          {record.comments || "-"} {/* Fixed: Changed from note to comments */}
+                          {"-"} {/* No comments field in Attendance type */}
                         </TableCell>
                       </TableRow>
                     ))
@@ -379,12 +379,12 @@ const ClassDetails = () => {
                           {notice.title}
                         </h3>
                         <span className="text-sm text-white/50">
-                          {new Date(notice.date).toLocaleDateString()}
+                          {new Date(notice.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-white/70">{notice.content}</p>
                       <div className="mt-2 text-sm text-white/50">
-                        Posted by: {notice.author}
+                        Posted by: {notice.creatorName || "Unknown"}
                       </div>
                     </div>
                   ))}
@@ -524,10 +524,10 @@ const ClassDetails = () => {
                     classSchedules.map((schedule) => (
                       <TableRow key={schedule.id}>
                         <TableCell>
-                          {new Date(schedule.dateTime).toLocaleString()} {/* Fixed: Changed from date to dateTime */}
+                          {`${schedule.day}, ${schedule.startTime}`}
                         </TableCell>
                         <TableCell>{schedule.room}</TableCell>
-                        <TableCell>{schedule.title}</TableCell> {/* Fixed: Changed from topic to title */}
+                        <TableCell>{"Class Session"}</TableCell>
                       </TableRow>
                     ))
                   ) : (
