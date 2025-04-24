@@ -31,7 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/StatCard";
+import StatCard from "@/components/StatCard"; // Fixed: Changed from named import to default import
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { mockClasses } from "@/api/mockData/classes";
 import { mockUsers } from "@/api/mockData/users";
@@ -72,7 +72,7 @@ const TeacherClassManagement = () => {
           // Find students in this class (in a real app, this would be based on enrollments)
           const classStudents = mockUsers.filter(user => (
             user.role === "student" && 
-            user.department === foundClass.department &&
+            user.departmentId === foundClass.departmentId && // Fixed: Changed from department to departmentId
             user.session === foundClass.session &&
             user.section === foundClass.section
           ));
@@ -246,13 +246,15 @@ const TeacherClassManagement = () => {
   
   // Calculate stats
   const attendanceRate = mockAttendance.length > 0 
-    ? Math.round((mockAttendance.filter(a => a.isPresent).length / mockAttendance.length) * 100) 
+    ? Math.round((mockAttendance.filter(a => a.status === "present").length / mockAttendance.length) * 100) // Fixed: Changed from isPresent to status === "present"
     : 0;
+  
+  const departmentName = mockClasses.find(c => c.departmentId === currentClass.departmentId)?.name || currentClass.departmentId; // Fixed: Changed from department to departmentId
   
   return (
     <DashboardLayout
       title={`${currentClass.courseName} (${currentClass.courseCode})`}
-      description={`${currentClass.department} - ${currentClass.session} - Section ${currentClass.section}`}
+      description={`${departmentName} - ${currentClass.session} - Section ${currentClass.section}`}
     >
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <StatCard 
@@ -269,7 +271,7 @@ const TeacherClassManagement = () => {
         />
         <StatCard 
           title="Classes Completed"
-          value={mockSchedules.filter(s => new Date(s.date) < new Date()).length.toString()}
+          value={mockSchedules.filter(s => new Date(s.dateTime) < new Date()).length.toString()} // Fixed: Changed from date to dateTime
           icon={Calendar}
           color="from-purple-600 to-purple-800"
         />
@@ -496,11 +498,11 @@ const TeacherClassManagement = () => {
                       mockSchedules.map((schedule) => (
                         <TableRow key={schedule.id}>
                           <TableCell>
-                            {new Date(schedule.date).toLocaleDateString()}
+                            {new Date(schedule.dateTime).toLocaleDateString()} {/* Fixed: Changed from date to dateTime */}
                           </TableCell>
-                          <TableCell>{schedule.time}</TableCell>
+                          <TableCell>{new Date(schedule.dateTime).toLocaleTimeString()} {/* Fixed: Changed from time to extracted from dateTime */}</TableCell>
                           <TableCell>{schedule.room}</TableCell>
-                          <TableCell>{schedule.topic}</TableCell>
+                          <TableCell>{schedule.title} {/* Fixed: Changed from topic to title */}</TableCell>
                         </TableRow>
                       ))
                     ) : (
