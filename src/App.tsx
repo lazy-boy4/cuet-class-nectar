@@ -1,7 +1,6 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
@@ -46,43 +45,41 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/notices" element={<NoticeBoard />} />
-            
-            {/* Student routes */}
-            <Route path="/student/dashboard" element={<StudentDashboard />} />
-            <Route path="/student/profile" element={<StudentProfile />} />
-            <Route path="/student/enroll" element={<Enroll />} />
-            <Route path="/student/classes/:classId" element={<ClassDetails />} />
-            
-            {/* Teacher routes */}
-            <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-            <Route path="/teacher/classes/:classId" element={<TeacherClassManagement />} />
-            
-            {/* Admin routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/departments" element={<DepartmentManagement />} />
-            <Route path="/admin/courses" element={<CourseManagement />} />
-            <Route path="/admin/classes" element={<ClassManagement />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/assign-teachers" element={<AssignTeachers />} />
-            <Route path="/admin/promote-crs" element={<PromoteCRs />} />
-            
-            {/* 404 route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/notices" element={<NoticeBoard />} />
+          
+          {/* Student routes */}
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/profile" element={<StudentProfile />} />
+          <Route path="/student/enroll" element={<Enroll />} />
+          <Route path="/student/classes/:classId" element={<ClassDetails />} />
+          
+          {/* Teacher routes */}
+          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          <Route path="/teacher/classes/:classId" element={<TeacherClassManagement />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/departments" element={<DepartmentManagement />} />
+          <Route path="/admin/courses" element={<CourseManagement />} />
+          <Route path="/admin/classes" element={<ClassManagement />} />
+          <Route path="/admin/users" element={<UserManagement />} />
+          <Route path="/admin/assign-teachers" element={<AssignTeachers />} />
+          <Route path="/admin/promote-crs" element={<PromoteCRs />} />
+          
+          {/* 404 route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster />
+      <Sonner />
     </QueryClientProvider>
   );
 }

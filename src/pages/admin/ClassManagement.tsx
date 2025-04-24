@@ -1,34 +1,32 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { PlusCircle, Pencil, Trash2, Filter } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Input } from "@/components/ui/input";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,500 +37,396 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 import { mockClasses } from "@/api/mockData/classes";
 import { mockDepartments } from "@/api/mockData/departments";
 import { mockCourses } from "@/api/mockData/courses";
+import { Class } from "@/types";
 
 const ClassManagement = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [filteredClasses, setFilteredClasses] = useState(mockClasses);
-  const [selectedClass, setSelectedClass] = useState<any>(null);
-  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [classes, setClasses] = useState<Class[]>(mockClasses);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Form fields
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [isAddClassOpen, setIsAddClassOpen] = useState(false);
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [classToEdit, setClassToEdit] = useState<Class | null>(null);
+  const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+
+  // Form data for new or edited class
   const [formData, setFormData] = useState({
-    departmentId: "",
+    department: "",
+    courseId: "",
     session: "",
     section: "",
-    courseId: ""
   });
-  
+
+  // Filter classes based on search term and department
+  const filteredClasses = classes.filter((classItem) => {
+    const matchesSearchTerm =
+      classItem.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = departmentFilter 
+      ? classItem.department === departmentFilter 
+      : true;
+    
+    return matchesSearchTerm && matchesDepartment;
+  });
+
+  // Reset form data when dialog closes
   useEffect(() => {
-    document.title = "Class Management - CUET Class Management System";
-    
-    // Check if user is authenticated as admin
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "admin") {
-      navigate("/login");
+    if (!isAddClassOpen && !isEditClassOpen) {
+      setFormData({
+        department: "",
+        courseId: "",
+        session: "",
+        section: "",
+      });
+      setClassToEdit(null);
     }
-  }, [navigate]);
-  
-  // Filter classes when department filter or search term changes
+  }, [isAddClassOpen, isEditClassOpen]);
+
+  // Set form data when editing a class
   useEffect(() => {
-    let filtered = [...mockClasses];
-    
-    if (departmentFilter !== "all") {
-      filtered = filtered.filter(cls => cls.departmentCode === departmentFilter);
+    if (classToEdit) {
+      const courseId = mockCourses.find(course => course.code === classToEdit.courseCode)?.id || "";
+      
+      setFormData({
+        department: classToEdit.department,
+        courseId: courseId,
+        session: classToEdit.session,
+        section: classToEdit.section,
+      });
     }
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        cls => 
-          cls.courseCode.toLowerCase().includes(term) ||
-          cls.courseName.toLowerCase().includes(term) ||
-          cls.section.toLowerCase().includes(term) ||
-          cls.session.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredClasses(filtered);
-  }, [departmentFilter, searchTerm]);
-  
-  // Load departments
-  const { data: departments = [] } = useQuery({
-    queryKey: ["departments"],
-    queryFn: () => mockDepartments,
-  });
-  
-  // Load courses
-  const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => mockCourses,
-  });
-  
-  // Handle form input changes
+  }, [classToEdit]);
+
+  // Handle input change for form fields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
   };
-  
+
+  // Handle select change for dropdown fields
   const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
   };
-  
-  // Handle adding a new class
-  const handleAddClass = () => {
-    // Validation
-    if (!formData.departmentId || !formData.courseId || !formData.session || !formData.section) {
+
+  // Handle form submit for adding or editing a class
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form data
+    if (!formData.department || !formData.courseId || !formData.session || !formData.section) {
       toast({
         title: "Error",
-        description: "All fields are required",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
       return;
     }
     
-    // In a real app, we would call an API here
-    // For now, we'll just show a success message
-    toast({
-      title: "Success",
-      description: "Class added successfully!",
-    });
-    
-    // Reset form and close dialog
-    setFormData({
-      departmentId: "",
-      courseId: "",
-      session: "",
-      section: ""
-    });
-    setIsAddDialogOpen(false);
-  };
-  
-  // Handle editing a class
-  const handleEditClass = () => {
-    // Validation
-    if (!formData.departmentId || !formData.courseId || !formData.session || !formData.section) {
+    // Find the selected course
+    const selectedCourse = mockCourses.find(course => course.id === formData.courseId);
+    if (!selectedCourse) {
       toast({
         title: "Error",
-        description: "All fields are required",
+        description: "Selected course not found.",
         variant: "destructive",
       });
       return;
     }
     
-    // In a real app, we would call an API here
-    toast({
-      title: "Success",
-      description: "Class updated successfully!",
-    });
+    // Generate class code (e.g., CSE-101-A)
+    const classCode = `${selectedCourse.code}-${formData.section}`;
     
-    // Reset and close dialog
-    setFormData({
-      departmentId: "",
-      courseId: "",
-      session: "",
-      section: ""
-    });
-    setIsEditDialogOpen(false);
+    if (classToEdit) {
+      // Update existing class
+      const updatedClasses = classes.map(classItem => 
+        classItem.id === classToEdit.id
+          ? {
+              ...classItem,
+              courseCode: selectedCourse.code,
+              courseName: selectedCourse.name,
+              department: formData.department,
+              session: formData.session,
+              section: formData.section,
+              classCode: classCode,
+            }
+          : classItem
+      );
+      
+      setClasses(updatedClasses);
+      setIsEditClassOpen(false);
+      
+      toast({
+        title: "Class Updated",
+        description: `Class ${classCode} has been updated successfully.`,
+      });
+    } else {
+      // Create new class
+      const newClass: Class = {
+        id: `class-${Date.now()}`,
+        courseCode: selectedCourse.code,
+        courseName: selectedCourse.name,
+        department: formData.department,
+        session: formData.session,
+        section: formData.section,
+        classCode: classCode,
+      };
+      
+      setClasses([...classes, newClass]);
+      setIsAddClassOpen(false);
+      
+      toast({
+        title: "Class Created",
+        description: `Class ${classCode} has been created successfully.`,
+      });
+    }
   };
-  
-  // Handle deleting a class
+
+  // Handle delete class
   const handleDeleteClass = () => {
-    // In a real app, we would call an API here
-    toast({
-      title: "Success",
-      description: "Class deleted successfully!",
-    });
+    if (!classToDelete) return;
     
-    // Close dialog
+    const updatedClasses = classes.filter(
+      (classItem) => classItem.id !== classToDelete.id
+    );
+    
+    setClasses(updatedClasses);
     setIsDeleteDialogOpen(false);
-  };
-  
-  // Open edit dialog and populate form
-  const openEditDialog = (cls: any) => {
-    setSelectedClass(cls);
-    setFormData({
-      departmentId: cls.departmentId,
-      courseId: cls.courseId,
-      session: cls.session,
-      section: cls.section
+    setClassToDelete(null);
+    
+    toast({
+      title: "Class Deleted",
+      description: `Class ${classToDelete.classCode} has been deleted.`,
     });
-    setIsEditDialogOpen(true);
   };
-  
-  // Open delete dialog
-  const openDeleteDialog = (cls: any) => {
-    setSelectedClass(cls);
-    setIsDeleteDialogOpen(true);
+
+  // Get courses filtered by department
+  const getFilteredCourses = () => {
+    if (!formData.department) return mockCourses;
+    return mockCourses.filter(course => {
+      const courseDept = mockDepartments.find(d => d.name === formData.department);
+      return courseDept && course.department === courseDept.code;
+    });
   };
 
   return (
     <DashboardLayout
       title="Class Management"
-      description="Manage class sections and their details"
+      description="Manage class sessions for courses"
     >
-      {/* Search and filter bar */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-1 items-center space-x-2">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Search by course code, name, or section..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-white/70" />
-            <Select
-              value={departmentFilter}
-              onValueChange={setDepartmentFilter}
-            >
-              <SelectTrigger className="w-[160px] bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.code}>
-                    {dept.code} - {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Search className="h-5 w-5 text-gray-400" />
+          <Input
+            placeholder="Search by course name or code..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-sm border-white/10"
+          />
+          <Select
+            value={departmentFilter}
+            onValueChange={setDepartmentFilter}
+          >
+            <SelectTrigger className="w-[180px] border-white/10">
+              <SelectValue placeholder="All Departments" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Departments</SelectItem>
+              {mockDepartments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.name}>
+                  {dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Button 
-          onClick={() => setIsAddDialogOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-blue-800"
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New Class
+        <Button onClick={() => setIsAddClassOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Class
         </Button>
       </div>
 
-      {/* Classes Table */}
-      <div className="reveal rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
+      <div className="mt-6 overflow-hidden rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
         <Table>
           <TableHeader>
-            <TableRow className="border-white/10 hover:bg-white/5">
-              <TableHead className="text-white">Department</TableHead>
-              <TableHead className="text-white">Course Code</TableHead>
-              <TableHead className="text-white">Course Name</TableHead>
-              <TableHead className="text-white">Session</TableHead>
-              <TableHead className="text-white">Section</TableHead>
-              <TableHead className="text-white">Teacher</TableHead>
-              <TableHead className="text-white text-right">Actions</TableHead>
+            <TableRow>
+              <TableHead className="w-[120px] text-white/70">Class Code</TableHead>
+              <TableHead className="w-[120px] text-white/70">Course Code</TableHead>
+              <TableHead className="text-white/70">Course Name</TableHead>
+              <TableHead className="text-white/70">Department</TableHead>
+              <TableHead className="text-white/70">Session</TableHead>
+              <TableHead className="text-white/70">Section</TableHead>
+              <TableHead className="text-right text-white/70">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredClasses.length === 0 ? (
-              <TableRow className="border-white/10 hover:bg-white/5">
-                <TableCell
-                  colSpan={7}
-                  className="h-24 text-center text-white/70"
-                >
-                  No classes found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredClasses.map((cls) => (
-                <TableRow 
-                  key={cls.id} 
-                  className="border-white/10 hover:bg-white/5"
-                >
-                  <TableCell className="text-white">
-                    {cls.departmentCode}
+            {filteredClasses.length > 0 ? (
+              filteredClasses.map((classItem) => (
+                <TableRow key={classItem.id}>
+                  <TableCell className="font-mono font-medium">
+                    {classItem.classCode}
                   </TableCell>
-                  <TableCell className="text-white">
-                    {cls.courseCode}
+                  <TableCell>{classItem.courseCode}</TableCell>
+                  <TableCell className="font-medium text-white">
+                    {classItem.courseName}
                   </TableCell>
-                  <TableCell className="text-white">
-                    {cls.courseName}
-                  </TableCell>
-                  <TableCell className="text-white">
-                    {cls.session}
-                  </TableCell>
-                  <TableCell className="text-white">
-                    {cls.section}
-                  </TableCell>
-                  <TableCell className="text-white">
-                    {cls.teacherName || "Not assigned"}
-                  </TableCell>
+                  <TableCell>{classItem.department}</TableCell>
+                  <TableCell>{classItem.session}</TableCell>
+                  <TableCell>{classItem.section}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(cls)}
-                      >
-                        <Pencil className="h-4 w-4 text-blue-400" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openDeleteDialog(cls)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-white/70 hover:bg-white/10 hover:text-white"
+                      onClick={() => {
+                        setClassToEdit(classItem);
+                        setIsEditClassOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-400 hover:bg-red-900/20 hover:text-red-400"
+                      onClick={() => {
+                        setClassToDelete(classItem);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  <p className="text-white/70">No classes found.</p>
+                  <p className="text-sm text-white/50">
+                    Try adjusting your search or filter.
+                  </p>
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Add Class Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="bg-cuet-navy border border-white/10">
+      {/* Add/Edit Class Dialog */}
+      <Dialog 
+        open={isAddClassOpen || isEditClassOpen} 
+        onOpenChange={(open) => {
+          if (isAddClassOpen) setIsAddClassOpen(open);
+          if (isEditClassOpen) setIsEditClassOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-white">Add New Class</DialogTitle>
+            <DialogTitle>
+              {isEditClassOpen ? "Edit Class" : "Add Class"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="department" className="text-white">
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="department" className="text-sm font-medium">
                 Department
-              </Label>
+              </label>
               <Select
-                value={formData.departmentId}
-                onValueChange={(value) => handleSelectChange("departmentId", value)}
+                value={formData.department}
+                onValueChange={(value) => handleSelectChange("department", value)}
               >
-                <SelectTrigger id="department" className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select department" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.code} - {dept.name}
+                  {mockDepartments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="course" className="text-white">
+
+            <div className="space-y-2">
+              <label htmlFor="courseId" className="text-sm font-medium">
                 Course
-              </Label>
+              </label>
               <Select
                 value={formData.courseId}
                 onValueChange={(value) => handleSelectChange("courseId", value)}
-                disabled={!formData.departmentId}
+                disabled={!formData.department}
               >
-                <SelectTrigger id="course" className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select course" />
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.department ? "Select a course" : "Select department first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {courses
-                    .filter(course => course.departmentId === formData.departmentId)
-                    .map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.code} - {course.name}
-                      </SelectItem>
-                    ))}
+                  {getFilteredCourses().map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.code}: {course.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="session" className="text-white">
+
+            <div className="space-y-2">
+              <label htmlFor="session" className="text-sm font-medium">
                 Session
-              </Label>
+              </label>
               <Input
                 id="session"
                 name="session"
+                placeholder="e.g., 2023-24"
                 value={formData.session}
                 onChange={handleInputChange}
-                placeholder="e.g., 2023-24"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
+                required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="section" className="text-white">
+
+            <div className="space-y-2">
+              <label htmlFor="section" className="text-sm font-medium">
                 Section
-              </Label>
+              </label>
               <Input
                 id="section"
                 name="section"
+                placeholder="e.g., A"
                 value={formData.section}
                 onChange={handleInputChange}
-                placeholder="e.g., A"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
+                required
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsAddDialogOpen(false)}
-              className="bg-white/5 text-white hover:bg-white/10 border-white/10"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddClass}
-              className="bg-gradient-to-r from-blue-600 to-blue-800"
-            >
-              Add Class
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Class Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-cuet-navy border border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-white">Edit Class</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-department" className="text-white">
-                Department
-              </Label>
-              <Select
-                value={formData.departmentId}
-                onValueChange={(value) => handleSelectChange("departmentId", value)}
-              >
-                <SelectTrigger id="edit-department" className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.code} - {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-course" className="text-white">
-                Course
-              </Label>
-              <Select
-                value={formData.courseId}
-                onValueChange={(value) => handleSelectChange("courseId", value)}
-              >
-                <SelectTrigger id="edit-course" className="bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses
-                    .filter(course => course.departmentId === formData.departmentId)
-                    .map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.code} - {course.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-session" className="text-white">
-                Session
-              </Label>
-              <Input
-                id="edit-session"
-                name="session"
-                value={formData.session}
-                onChange={handleInputChange}
-                placeholder="e.g., 2023-24"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-section" className="text-white">
-                Section
-              </Label>
-              <Input
-                id="edit-section"
-                name="section"
-                value={formData.section}
-                onChange={handleInputChange}
-                placeholder="e.g., A"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-              className="bg-white/5 text-white hover:bg-white/10 border-white/10"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleEditClass}
-              className="bg-gradient-to-r from-blue-600 to-blue-800"
-            >
-              Update Class
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="submit">
+                {isEditClassOpen ? "Update Class" : "Add Class"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-cuet-navy border border-white/10">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
-              Are you sure?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the class{" "}
-              <span className="font-medium text-white">
-                {selectedClass?.courseCode} - {selectedClass?.section}
-              </span>{" "}
-              and all related data.
+              This will permanently delete {classToDelete?.classCode}: {classToDelete?.courseName}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/5 text-white hover:bg-white/10 border-white/10">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
               onClick={handleDeleteClass}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700"
             >
               Delete
             </AlertDialogAction>

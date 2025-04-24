@@ -1,446 +1,374 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, Plus, Check, X, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Check, Info, Loader2, Search, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Input } from "@/components/ui/input";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
 import { mockClasses } from "@/api/mockData/classes";
 import { mockDepartments } from "@/api/mockData/departments";
-import { mockUsers } from "@/api/mockData/users";
 import { mockEnrollments } from "@/api/mockData/enrollments";
+import { Class } from "@/types";
 
 const Enroll = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false);
-  const [isDropDialogOpen, setIsDropDialogOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [availableClasses, setAvailableClasses] = useState<Class[]>(mockClasses);
+  const [enrollments, setEnrollments] = useState<any[]>(mockEnrollments);
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [availableClasses, setAvailableClasses] = useState<any[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<any[]>([]);
-  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  useEffect(() => {
-    document.title = "Enroll in Classes - CUET Class Management System";
+  // Filter available classes based on search and department filter
+  const filteredClasses = availableClasses.filter((classItem) => {
+    const matchesSearchTerm =
+      classItem.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Check if user is authenticated as student
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "student") {
-      navigate("/login");
-      return;
-    }
+    const matchesDepartment = departmentFilter 
+      ? classItem.department === departmentFilter 
+      : true;
     
-    // Get current user from mock data
-    const student = mockUsers.find(u => u.role === "student");
-    if (student) {
-      setCurrentUser(student);
-    }
-  }, [navigate]);
-  
-  // Load departments
-  const { data: departments = [] } = useQuery({
-    queryKey: ["departments"],
-    queryFn: () => mockDepartments,
+    return matchesSearchTerm && matchesDepartment;
   });
   
-  // Load classes and enrollments
-  const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: () => mockClasses,
-  });
-  
-  // Load user enrollments
-  const { data: userEnrollments = [] } = useQuery({
-    queryKey: ["userEnrollments", currentUser?.id],
-    queryFn: () => mockEnrollments.filter(e => e.studentId === currentUser?.id),
-    enabled: !!currentUser,
-  });
-  
-  // Set enrollments when data is loaded
-  useEffect(() => {
-    if (userEnrollments.length > 0) {
-      setEnrollments(userEnrollments);
-    }
-  }, [userEnrollments]);
-  
-  // Filter available classes (not already enrolled or pending)
-  useEffect(() => {
-    if (classes.length > 0 && enrollments.length >= 0) {
-      const enrolledClassIds = enrollments.map(e => e.classId);
-      
-      const available = classes.filter(cls => !enrolledClassIds.includes(cls.id));
-      setAvailableClasses(available);
-      
-      // Apply initial filters
-      filterClasses(available, searchTerm, departmentFilter);
-    }
-  }, [classes, enrollments]);
-  
-  // Filter classes when search term or department filter changes
-  const filterClasses = (classesToFilter: any[], search: string, department: string) => {
-    let filtered = [...classesToFilter];
-    
-    if (search) {
-      const term = search.toLowerCase();
-      filtered = filtered.filter(
-        cls => 
-          cls.courseCode.toLowerCase().includes(term) ||
-          cls.courseName.toLowerCase().includes(term) ||
-          (cls.teacherName && cls.teacherName.toLowerCase().includes(term))
-      );
-    }
-    
-    if (department !== "all") {
-      filtered = filtered.filter(cls => cls.departmentCode === department);
-    }
-    
-    setFilteredClasses(filtered);
-  };
-  
-  useEffect(() => {
-    filterClasses(availableClasses, searchTerm, departmentFilter);
-  }, [searchTerm, departmentFilter, availableClasses]);
-  
-  // Get status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return <Badge className="bg-green-700/30 text-green-400">Approved</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-700/30 text-yellow-400">Pending</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-700/30 text-red-400">Rejected</Badge>;
-      default:
-        return <Badge className="bg-white/20 text-white/70">{status}</Badge>;
-    }
-  };
-  
-  // Open enroll dialog
-  const openEnrollDialog = (cls: any) => {
-    setSelectedClass(cls);
-    setIsEnrollDialogOpen(true);
-  };
-  
-  // Open drop dialog
-  const openDropDialog = (enrollment: any) => {
-    const cls = classes.find(c => c.id === enrollment.classId);
-    setSelectedClass({
-      ...cls,
-      enrollmentId: enrollment.id,
-      status: enrollment.status
-    });
-    setIsDropDialogOpen(true);
-  };
-  
-  // Handle enrolling in a class
-  const handleEnroll = () => {
-    if (!selectedClass || !currentUser) return;
-    
-    // Create new enrollment
-    const newEnrollment = {
-      id: `enr-${Date.now()}`,
-      studentId: currentUser.id,
-      classId: selectedClass.id,
-      status: "pending",
-      enrolledAt: new Date().toISOString(),
-    };
-    
-    // Add to enrollments
-    setEnrollments(prev => [...prev, newEnrollment]);
-    
-    // In a real app, we would call an API here
-    toast({
-      title: "Enrollment Request Submitted",
-      description: `Your enrollment request for ${selectedClass.courseCode} (Section ${selectedClass.section}) is pending approval.`,
-    });
-    
-    setIsEnrollDialogOpen(false);
-  };
-  
-  // Handle dropping a class
-  const handleDrop = () => {
-    if (!selectedClass || !currentUser) return;
-    
-    // Remove from enrollments
-    setEnrollments(prev => 
-      prev.filter(e => e.id !== selectedClass.enrollmentId)
+  // Check if a class is already enrolled
+  const isEnrolled = (classId: string) => {
+    return enrollments.some(
+      (enrollment) => enrollment.classId === classId && ["enrolled", "pending"].includes(enrollment.status)
     );
-    
-    // In a real app, we would call an API here
-    toast({
-      title: "Class Dropped",
-      description: `You have successfully dropped ${selectedClass.courseCode} (Section ${selectedClass.section}).`,
-    });
-    
-    setIsDropDialogOpen(false);
   };
-
+  
+  // Get enrollment status for a class
+  const getEnrollmentStatus = (classId: string) => {
+    const enrollment = enrollments.find(e => e.classId === classId);
+    return enrollment ? enrollment.status : null;
+  };
+  
+  // Handle enrollment request
+  const handleEnrollRequest = async () => {
+    if (!selectedClass) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // In a real app, this would be an API call to request enrollment
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      // Create a mock enrollment
+      const newEnrollment = {
+        id: `enr-${Date.now()}`,
+        studentId: "student-1", // In a real app, this would be the current user's ID
+        classId: selectedClass.id,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Update enrollments state
+      setEnrollments([...enrollments, newEnrollment]);
+      
+      // Close dialog and show success message
+      setIsDialogOpen(false);
+      setSelectedClass(null);
+      
+      toast({
+        title: "Enrollment Requested",
+        description: `Your enrollment request for ${selectedClass.courseName} has been submitted and is pending approval.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit enrollment request. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   return (
     <DashboardLayout
-      title="Course Enrollment"
-      description="Enroll in classes for the current semester"
+      title="Enroll in Classes"
+      description="Browse available classes and request enrollment"
     >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Available Classes */}
-        <div className="lg:col-span-1 space-y-4">
-          <h2 className="text-xl font-semibold text-white">Available Classes</h2>
-          
-          {/* Search and Filter */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
-              <Input
-                placeholder="Search courses..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/50"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-5 w-5 text-white/70" />
-              <Select
-                value={departmentFilter}
-                onValueChange={setDepartmentFilter}
-              >
-                <SelectTrigger className="w-[160px] bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.code}>
-                      {dept.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {/* Classes List */}
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
-            <div className="max-h-[500px] overflow-y-auto">
-              {filteredClasses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Clock className="mb-2 h-12 w-12 text-white/30" />
-                  <p className="text-lg text-white">No available classes</p>
-                  <p className="text-sm text-white/70">
-                    Check back later or adjust your search filters
-                  </p>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="col-span-1 md:col-span-2">
+          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Available Classes</CardTitle>
+              <div className="flex space-x-2">
+                <div className="relative w-[200px]">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-white/50" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 border-white/10"
+                  />
                 </div>
-              ) : (
-                filteredClasses.map((cls) => (
-                  <Card 
-                    key={cls.id} 
-                    className="border-white/10 bg-transparent hover:bg-white/[0.03] transition-all rounded-none border-x-0 border-t-0 last:border-b-0"
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg text-white flex justify-between items-start">
-                        <span>{cls.courseCode}: {cls.courseName}</span>
-                        <Badge variant="outline" className="ml-2 border-white/10">
-                          {cls.departmentCode}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>
-                        Section {cls.section} • {cls.session}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm text-white/70">
-                        Instructor: {cls.teacherName || "Not assigned"}
-                      </p>
-                      <p className="text-sm text-white/70">
-                        Credits: {cls.credits || 3}
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        onClick={() => openEnrollDialog(cls)}
-                        className="bg-gradient-to-r from-blue-600 to-blue-800"
-                        size="sm"
-                      >
-                        <Plus className="mr-1 h-4 w-4" /> Request Enrollment
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+                <Select
+                  value={departmentFilter}
+                  onValueChange={setDepartmentFilter}
+                >
+                  <SelectTrigger className="w-[180px] border-white/10">
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Departments</SelectItem>
+                    {mockDepartments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.name}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[150px]">Course Code</TableHead>
+                    <TableHead>Course Name</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Section</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClasses.length > 0 ? (
+                    filteredClasses.map((classItem) => {
+                      const enrolled = isEnrolled(classItem.id);
+                      const status = getEnrollmentStatus(classItem.id);
+                      
+                      return (
+                        <TableRow key={classItem.id}>
+                          <TableCell className="font-mono">
+                            {classItem.courseCode}
+                          </TableCell>
+                          <TableCell className="font-medium text-white">
+                            {classItem.courseName}
+                          </TableCell>
+                          <TableCell>{classItem.department}</TableCell>
+                          <TableCell>
+                            {classItem.session} - {classItem.section}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {enrolled ? (
+                              status === "enrolled" ? (
+                                <span className="inline-flex items-center rounded-md bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
+                                  <Check className="mr-1 h-3 w-3" />
+                                  Enrolled
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-md bg-yellow-500/20 px-2 py-1 text-xs font-medium text-yellow-400">
+                                  <Info className="mr-1 h-3 w-3" />
+                                  Pending
+                                </span>
+                              )
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedClass(classItem);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                Request Enrollment
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        <p className="text-white/70">No classes found.</p>
+                        <p className="text-sm text-white/50">
+                          Try adjusting your search or filter.
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
         
-        {/* My Enrollments */}
-        <div className="lg:col-span-1 space-y-4">
-          <h2 className="text-xl font-semibold text-white">My Enrollments</h2>
-          
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-white/5">
-                  <TableHead className="text-white">Course</TableHead>
-                  <TableHead className="text-white">Section</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {enrollments.length === 0 ? (
-                  <TableRow className="border-white/10 hover:bg-white/5">
-                    <TableCell
-                      colSpan={4}
-                      className="h-24 text-center text-white/70"
-                    >
-                      You haven't enrolled in any classes yet
-                    </TableCell>
-                  </TableRow>
-                ) : (
+        <div className="col-span-1">
+          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Your Enrollments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {enrollments.length > 0 ? (
                   enrollments.map((enrollment) => {
-                    const cls = classes.find(c => c.id === enrollment.classId);
-                    if (!cls) return null;
+                    const classInfo = mockClasses.find(c => c.id === enrollment.classId);
+                    if (!classInfo) return null;
                     
                     return (
-                      <TableRow 
+                      <div 
                         key={enrollment.id} 
-                        className="border-white/10 hover:bg-white/5"
+                        className="rounded-lg border border-white/10 p-3"
                       >
-                        <TableCell className="font-medium text-white">
-                          {cls.courseCode}: {cls.courseName}
-                        </TableCell>
-                        <TableCell className="text-white">
-                          {cls.section}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(enrollment.status)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openDropDialog(enrollment)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                            disabled={enrollment.status === "rejected"}
-                          >
-                            <X className="mr-1 h-4 w-4" /> Drop
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        <div className="flex justify-between">
+                          <h4 className="font-medium text-white">
+                            {classInfo.courseName}
+                          </h4>
+                          {enrollment.status === "enrolled" ? (
+                            <span className="inline-flex items-center rounded-md bg-green-500/20 px-2 py-1 text-xs font-medium text-green-400">
+                              <Check className="mr-1 h-3 w-3" />
+                              Enrolled
+                            </span>
+                          ) : enrollment.status === "pending" ? (
+                            <span className="inline-flex items-center rounded-md bg-yellow-500/20 px-2 py-1 text-xs font-medium text-yellow-400">
+                              <Info className="mr-1 h-3 w-3" />
+                              Pending
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-red-500/20 px-2 py-1 text-xs font-medium text-red-400">
+                              <X className="mr-1 h-3 w-3" />
+                              Rejected
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-white/70">
+                          {classInfo.courseCode} - {classInfo.department}
+                        </p>
+                        <p className="text-xs text-white/50">
+                          {classInfo.session} - Section {classInfo.section}
+                        </p>
+                      </div>
                     );
                   })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Info className="mb-2 h-10 w-10 text-blue-400 opacity-70" />
+                    <p className="text-white/70">
+                      You haven't enrolled in any classes yet.
+                    </p>
+                    <p className="mt-1 text-sm text-white/50">
+                      Browse available classes and request enrollment.
+                    </p>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="mt-6 border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle>Enrollment Help</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              <div className="space-y-4 text-white/70">
+                <p>
+                  <strong className="text-white">How enrollment works:</strong>
+                  <br />
+                  Request enrollment in your desired classes. Class Representatives (CRs) review and approve requests.
+                </p>
+                <p>
+                  <strong className="text-white">Need help?</strong>
+                  <br />
+                  Contact your department office or reach out to the class CR directly if you have questions about enrollment.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Enroll Dialog */}
-      <AlertDialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
-        <AlertDialogContent className="bg-cuet-navy border border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
-              Enroll in Class
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to request enrollment in{" "}
-              <span className="font-medium text-white">
-                {selectedClass?.courseCode}: {selectedClass?.courseName}
-              </span>{" "}
-              (Section {selectedClass?.section})?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/5 text-white hover:bg-white/10 border-white/10">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleEnroll}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Request Enrollment
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       
-      {/* Drop Class Dialog */}
-      <AlertDialog open={isDropDialogOpen} onOpenChange={setIsDropDialogOpen}>
-        <AlertDialogContent className="bg-cuet-navy border border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
-              Drop Class
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to drop{" "}
-              <span className="font-medium text-white">
-                {selectedClass?.courseCode}: {selectedClass?.courseName}
-              </span>{" "}
-              (Section {selectedClass?.section})?
-              {selectedClass?.status === "approved" && (
-                <p className="mt-2 text-red-400">
-                  Warning: Dropping an approved class may affect your academic record.
-                </p>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/5 text-white hover:bg-white/10 border-white/10">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDrop}
-              className="bg-red-600 hover:bg-red-700 text-white"
+      {/* Enrollment Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Enrollment Request</DialogTitle>
+            <DialogDescription>
+              You are about to request enrollment in the following class:
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedClass && (
+            <div className="space-y-4 py-4">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <h3 className="mb-2 text-lg font-medium text-white">
+                  {selectedClass.courseName}
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Course Code:</span>
+                    <span className="font-mono text-white">{selectedClass.courseCode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Department:</span>
+                    <span className="text-white">{selectedClass.department}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Session:</span>
+                    <span className="text-white">{selectedClass.session}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Section:</span>
+                    <span className="text-white">{selectedClass.section}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <DialogDescription>
+                Your enrollment request will be sent to the Class Representative (CR) for approval.
+                You'll be notified once it's approved or rejected.
+              </DialogDescription>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
             >
-              Drop Class
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEnrollRequest}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Confirm Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

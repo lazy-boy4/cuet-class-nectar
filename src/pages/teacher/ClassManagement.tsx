@@ -1,543 +1,552 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { 
-  Users, 
+  AlertCircle, 
   Calendar, 
-  Bell, 
+  CheckCircle2, 
+  File, 
+  Info, 
+  Loader2, 
+  MessageSquarePlus, 
+  Save, 
+  Send, 
   Upload, 
-  Check, 
-  X, 
-  Clock,
-  FileText,
-  Send
+  UserCheck, 
+  X 
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/StatCard";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { mockClasses } from "@/api/mockData/classes";
 import { mockUsers } from "@/api/mockData/users";
 import { mockAttendance } from "@/api/mockData/attendance";
+import { mockSchedules } from "@/api/mockData/schedules";
+import { Class, User } from "@/types";
 
 const TeacherClassManagement = () => {
   const { classId } = useParams<{ classId: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isAddNoticeDialogOpen, setIsAddNoticeDialogOpen] = useState(false);
-  const [isUploadScheduleDialogOpen, setIsUploadScheduleDialogOpen] = useState(false);
-  const [scheduleFile, setScheduleFile] = useState<File | null>(null);
+  
+  const [currentClass, setCurrentClass] = useState<Class | null>(null);
+  const [students, setStudents] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [attendanceDate, setAttendanceDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    new Date().toISOString().split("T")[0]
   );
   
-  // Notice form
-  const [noticeForm, setNoticeForm] = useState({
-    title: "",
-    content: ""
-  });
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, boolean>>({});
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeContent, setNoticeContent] = useState("");
+  const [scheduleFile, setScheduleFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   
-  // Attendance tracking
-  const [studentAttendance, setStudentAttendance] = useState<{
-    [studentId: string]: "present" | "absent" | "late";
-  }>({});
-  const [attendanceChanged, setAttendanceChanged] = useState(false);
-  
+  // Load class data and students
   useEffect(() => {
-    document.title = "Class Management - CUET Class Management System";
+    const loadClassData = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Find the class from mock data
+        const foundClass = mockClasses.find(c => c.id === classId);
+        
+        if (foundClass) {
+          setCurrentClass(foundClass);
+          
+          // Find students in this class (in a real app, this would be based on enrollments)
+          const classStudents = mockUsers.filter(user => (
+            user.role === "student" && 
+            user.department === foundClass.department &&
+            user.session === foundClass.session &&
+            user.section === foundClass.section
+          ));
+          
+          setStudents(classStudents);
+          
+          // Initialize attendance records (all present by default)
+          const initialAttendance: Record<string, boolean> = {};
+          classStudents.forEach(student => {
+            initialAttendance[student.id] = true;
+          });
+          
+          setAttendanceRecords(initialAttendance);
+        }
+      } catch (error) {
+        console.error("Error loading class data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load class data. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Check if user is authenticated as teacher
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "teacher") {
-      navigate("/login");
-      return;
-    }
-    
-    // Check if class exists and teacher is assigned to it
-    if (!classId) {
-      navigate("/teacher/dashboard");
-      return;
-    }
-  }, [navigate, classId]);
+    loadClassData();
+  }, [classId, toast]);
   
-  // Get class details
-  const { data: classDetails } = useQuery({
-    queryKey: ["classDetails", classId],
-    queryFn: () => {
-      const cls = mockClasses.find(c => c.id === classId);
-      if (!cls) throw new Error("Class not found");
-      return cls;
-    },
-    enabled: !!classId,
-  });
-  
-  // Get enrolled students
-  const { data: enrolledStudents = [] } = useQuery({
-    queryKey: ["enrolledStudents", classId],
-    queryFn: () => {
-      // In a real app, we would fetch enrolled students for this class from an API
-      // For now, we'll simulate it with some mock data
-      return mockUsers
-        .filter(user => user.role === "student")
-        .filter(user => user.departmentCode === classDetails?.departmentCode)
-        .slice(0, 15); // Take a subset for demonstration
-    },
-    enabled: !!classDetails,
-  });
-  
-  // Get attendance records
-  const { data: attendanceRecords = [] } = useQuery({
-    queryKey: ["attendanceRecords", classId, attendanceDate],
-    queryFn: async () => {
-      // In a real app, we would fetch attendance records for this class and date
-      // For now, we'll use mock data
-      return mockAttendance.filter(record => 
-        record.classId === classId && 
-        record.date === attendanceDate
-      );
-    },
-    enabled: !!classId && !!attendanceDate,
-  });
-  
-  // Initialize attendance from records
-  useEffect(() => {
-    if (enrolledStudents.length > 0 && attendanceRecords.length > 0) {
-      const initialAttendance: {[key: string]: "present" | "absent" | "late"} = {};
-      
-      enrolledStudents.forEach(student => {
-        const record = attendanceRecords.find(r => r.studentId === student.id);
-        initialAttendance[student.id] = record ? record.status : "absent";
-      });
-      
-      setStudentAttendance(initialAttendance);
-      setAttendanceChanged(false);
-    } else if (enrolledStudents.length > 0) {
-      // No records found for this date, initialize all as absent
-      const initialAttendance: {[key: string]: "present" | "absent" | "late"} = {};
-      
-      enrolledStudents.forEach(student => {
-        initialAttendance[student.id] = "absent";
-      });
-      
-      setStudentAttendance(initialAttendance);
-      setAttendanceChanged(false);
-    }
-  }, [enrolledStudents, attendanceRecords]);
-  
-  // Handle notice form input changes
-  const handleNoticeInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNoticeForm(prev => ({ ...prev, [name]: value }));
-  };
-  
-  // Handle attendance change for a student
-  const handleAttendanceChange = (studentId: string, status: "present" | "absent" | "late") => {
-    setStudentAttendance(prev => ({
+  // Handle attendance toggle
+  const handleAttendanceToggle = (studentId: string, isPresent: boolean) => {
+    setAttendanceRecords(prev => ({
       ...prev,
-      [studentId]: status
+      [studentId]: isPresent
     }));
-    setAttendanceChanged(true);
   };
   
-  // Handle file selection for schedule
-  const handleScheduleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+  // Handle save attendance
+  const handleSaveAttendance = async () => {
+    setIsSaving(true);
+    
+    try {
+      // In a real app, this would send the data to the server
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Attendance Saved",
+        description: `Attendance for ${attendanceDate} has been recorded successfully.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save attendance. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  // Handle post notice
+  const handlePostNotice = async () => {
+    if (!noticeTitle.trim() || !noticeContent.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please provide both title and content for the notice.",
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // In a real app, this would send the data to the server
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Notice Posted",
+        description: "Your notice has been posted successfully.",
+      });
+      
+      // Reset form
+      setNoticeTitle("");
+      setNoticeContent("");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to post notice. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  // Handle schedule file change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
       setScheduleFile(e.target.files[0]);
     }
   };
   
-  // Handle submitting attendance
-  const handleSubmitAttendance = () => {
-    // In a real app, we would send this to an API
-    toast({
-      title: "Success",
-      description: "Attendance has been saved for " + attendanceDate,
-    });
-    setAttendanceChanged(false);
-  };
-  
-  // Handle posting a notice
-  const handlePostNotice = () => {
-    if (!noticeForm.title || !noticeForm.content) {
-      toast({
-        title: "Error",
-        description: "Title and content are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // In a real app, we would send this to an API
-    toast({
-      title: "Success",
-      description: "Notice has been posted",
-    });
-    
-    setNoticeForm({
-      title: "",
-      content: ""
-    });
-    setIsAddNoticeDialogOpen(false);
-  };
-  
-  // Handle uploading a schedule
-  const handleUploadSchedule = () => {
+  // Handle upload schedule
+  const handleUploadSchedule = async () => {
     if (!scheduleFile) {
       toast({
-        title: "Error",
-        description: "Please select a file to upload",
         variant: "destructive",
+        title: "Error",
+        description: "Please select a file to upload.",
       });
       return;
     }
     
-    // In a real app, we would send this file to an API
-    toast({
-      title: "Success",
-      description: `Schedule "${scheduleFile.name}" has been uploaded`,
-    });
+    setIsSaving(true);
     
-    setScheduleFile(null);
-    setIsUploadScheduleDialogOpen(false);
+    try {
+      // In a real app, this would upload the file to the server
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Schedule Uploaded",
+        description: `Schedule file "${scheduleFile.name}" has been uploaded successfully.`,
+      });
+      
+      // Reset file input
+      setScheduleFile(null);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload schedule. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
-
-  if (!classDetails) {
+  
+  // Handle attendance report generation
+  const handleGenerateAttendanceReport = () => {
+    setIsAlertDialogOpen(true);
+  };
+  
+  if (isLoading) {
     return (
-      <DashboardLayout
-        title="Class Management"
-        description="Manage class activities"
-      >
-        <div className="flex items-center justify-center h-64">
-          <p className="text-white/70">Loading class details...</p>
+      <DashboardLayout title="Loading..." description="Please wait">
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="mr-2 h-8 w-8 animate-spin text-blue-500" />
+          <span className="text-lg text-white/70">Loading class data...</span>
         </div>
       </DashboardLayout>
     );
   }
-
+  
+  if (!currentClass) {
+    return (
+      <DashboardLayout title="Error" description="Class not found">
+        <div className="flex h-64 flex-col items-center justify-center">
+          <AlertCircle className="mb-4 h-12 w-12 text-red-500" />
+          <h2 className="mb-2 text-xl font-semibold text-white">Class Not Found</h2>
+          <p className="text-white/70">
+            The class you're looking for doesn't exist or you don't have access to it.
+          </p>
+          <Button className="mt-4" asChild>
+            <Link to="/teacher/dashboard">Return to Dashboard</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  // Calculate stats
+  const attendanceRate = mockAttendance.length > 0 
+    ? Math.round((mockAttendance.filter(a => a.isPresent).length / mockAttendance.length) * 100) 
+    : 0;
+  
   return (
     <DashboardLayout
-      title={`${classDetails.courseCode}: ${classDetails.courseName}`}
-      description={`Section ${classDetails.section} • ${classDetails.session} • ${classDetails.departmentCode}`}
+      title={`${currentClass.courseName} (${currentClass.courseCode})`}
+      description={`${currentClass.department} - ${currentClass.session} - Section ${currentClass.section}`}
     >
-      <Tabs defaultValue="attendance" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-white/5">
-          <TabsTrigger value="attendance">
-            <Users className="mr-2 h-4 w-4" /> Attendance
-          </TabsTrigger>
-          <TabsTrigger value="notices">
-            <Bell className="mr-2 h-4 w-4" /> Notices
-          </TabsTrigger>
-          <TabsTrigger value="schedule">
-            <Calendar className="mr-2 h-4 w-4" /> Schedule
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Attendance Tab */}
-        <TabsContent value="attendance" className="mt-6 space-y-4">
-          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <div>Attendance Tracker</div>
-                <Input
-                  type="date"
-                  value={attendanceDate}
-                  onChange={(e) => setAttendanceDate(e.target.value)}
-                  className="w-auto bg-white/5 border-white/10 text-white"
-                />
-              </CardTitle>
-              <CardDescription>
-                Mark attendance for {enrolledStudents.length} students in this class
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border border-white/10">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <StatCard 
+          title="Students"
+          value={students.length.toString()}
+          icon={UserCheck}
+          color="from-blue-600 to-blue-800"
+        />
+        <StatCard 
+          title="Average Attendance"
+          value={`${attendanceRate}%`}
+          icon={CheckCircle2}
+          color="from-green-600 to-green-800"
+        />
+        <StatCard 
+          title="Classes Completed"
+          value={mockSchedules.filter(s => new Date(s.date) < new Date()).length.toString()}
+          icon={Calendar}
+          color="from-purple-600 to-purple-800"
+        />
+      </div>
+      
+      <div className="mt-8">
+        <Tabs defaultValue="attendance" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="notices">Notices</TabsTrigger>
+            <TabsTrigger value="schedules">Schedules</TabsTrigger>
+          </TabsList>
+          
+          {/* Attendance Tab */}
+          <TabsContent value="attendance" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Mark Attendance</CardTitle>
+                <div className="flex space-x-2">
+                  <Input
+                    type="date"
+                    value={attendanceDate}
+                    onChange={(e) => setAttendanceDate(e.target.value)}
+                    className="w-auto border-white/10"
+                  />
+                  <Button onClick={handleGenerateAttendanceReport} variant="outline">
+                    <File className="mr-2 h-4 w-4" />
+                    Report
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/10 hover:bg-white/5">
-                      <TableHead className="text-white">Student</TableHead>
-                      <TableHead className="text-white">ID</TableHead>
-                      <TableHead className="text-white">Present</TableHead>
-                      <TableHead className="text-white">Absent</TableHead>
-                      <TableHead className="text-white">Late</TableHead>
+                    <TableRow>
+                      <TableHead className="w-[50px]">No.</TableHead>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>ID</TableHead>
+                      <TableHead className="text-right">Present</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {enrolledStudents.length === 0 ? (
-                      <TableRow className="border-white/10 hover:bg-white/5">
-                        <TableCell
-                          colSpan={5}
-                          className="h-24 text-center text-white/70"
-                        >
-                          No students enrolled in this class
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      enrolledStudents.map((student) => (
-                        <TableRow 
-                          key={student.id} 
-                          className="border-white/10 hover:bg-white/5"
-                        >
-                          <TableCell className="font-medium text-white">
-                            {student.name}
+                    {students.length > 0 ? (
+                      students.map((student, index) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>{student.name}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {student.id.slice(0, 8)}...
                           </TableCell>
-                          <TableCell className="text-white/80">
-                            {student.id.substring(0, 8)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                className={`rounded-full p-1 ${
-                                  studentAttendance[student.id] === "present" 
-                                    ? "bg-green-600 text-white" 
-                                    : "bg-white/10 text-white/50"
-                                }`}
-                                onClick={() => handleAttendanceChange(student.id, "present")}
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                className={`rounded-full p-1 ${
-                                  studentAttendance[student.id] === "absent" 
-                                    ? "bg-red-600 text-white" 
-                                    : "bg-white/10 text-white/50"
-                                }`}
-                                onClick={() => handleAttendanceChange(student.id, "absent")}
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                className={`rounded-full p-1 ${
-                                  studentAttendance[student.id] === "late" 
-                                    ? "bg-yellow-600 text-white" 
-                                    : "bg-white/10 text-white/50"
-                                }`}
-                                onClick={() => handleAttendanceChange(student.id, "late")}
-                              >
-                                <Clock className="h-4 w-4" />
-                              </button>
-                            </div>
+                          <TableCell className="text-right">
+                            <Checkbox
+                              checked={attendanceRecords[student.id] || false}
+                              onCheckedChange={(checked) => 
+                                handleAttendanceToggle(student.id, checked as boolean)
+                              }
+                            />
                           </TableCell>
                         </TableRow>
                       ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          <p className="text-white/70">No students found in this class.</p>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </TableBody>
                 </Table>
-              </div>
-              
-              <div className="mt-4 flex justify-end">
-                <Button 
-                  onClick={handleSubmitAttendance}
-                  className="bg-gradient-to-r from-blue-600 to-blue-800"
-                  disabled={!attendanceChanged}
-                >
-                  <Check className="mr-2 h-4 w-4" />
-                  Save Attendance
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Notices Tab */}
-        <TabsContent value="notices" className="mt-6 space-y-4">
-          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Class Notices</CardTitle>
-                <Button 
-                  onClick={() => setIsAddNoticeDialogOpen(true)}
-                  className="bg-gradient-to-r from-blue-600 to-blue-800"
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Post Notice
-                </Button>
-              </div>
-              <CardDescription>
-                Post announcements for students in this class
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-6">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Bell className="mb-2 h-12 w-12 text-white/30" />
-                  <h3 className="mb-1 text-xl font-medium text-white">No notices yet</h3>
-                  <p className="text-white/70">
-                    Use the "Post Notice" button to create announcements for your class
-                  </p>
+                
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    onClick={handleSaveAttendance}
+                    disabled={isSaving || students.length === 0}
+                  >
+                    {isSaving && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {!isSaving && <Save className="mr-2 h-4 w-4" />}
+                    Save Attendance
+                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Schedule Tab */}
-        <TabsContent value="schedule" className="mt-6 space-y-4">
-          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Class Schedule</CardTitle>
-                <Button 
-                  onClick={() => setIsUploadScheduleDialogOpen(true)}
-                  className="bg-gradient-to-r from-blue-600 to-blue-800"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Schedule
-                </Button>
-              </div>
-              <CardDescription>
-                Manage and share class schedules
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border border-white/10 bg-white/5 p-6">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <FileText className="mb-2 h-12 w-12 text-white/30" />
-                  <h3 className="mb-1 text-xl font-medium text-white">No schedule uploaded</h3>
-                  <p className="text-white/70">
-                    Upload a schedule to share with students
-                  </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Notices Tab */}
+          <TabsContent value="notices" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Post a Notice</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="notice-title" className="text-sm font-medium">
+                      Title
+                    </label>
+                    <Input
+                      id="notice-title"
+                      placeholder="Enter notice title"
+                      value={noticeTitle}
+                      onChange={(e) => setNoticeTitle(e.target.value)}
+                      className="border-white/10"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="notice-content" className="text-sm font-medium">
+                      Content
+                    </label>
+                    <Textarea
+                      id="notice-content"
+                      placeholder="Enter notice content"
+                      value={noticeContent}
+                      onChange={(e) => setNoticeContent(e.target.value)}
+                      rows={5}
+                      className="border-white/10"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handlePostNotice}
+                      disabled={isSaving || !noticeTitle.trim() || !noticeContent.trim()}
+                    >
+                      {isSaving && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {!isSaving && <MessageSquarePlus className="mr-2 h-4 w-4" />}
+                      Post Notice
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Notices</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                    <div className="mb-2 flex justify-between">
+                      <h4 className="font-semibold text-white">Final Exam Schedule</h4>
+                      <span className="text-xs text-white/50">3 days ago</span>
+                    </div>
+                    <p className="text-sm text-white/70">
+                      The final exam for this course will be held on December 15, 2023, at Room 301, Building B.
+                      Please bring your student ID and be present at least 15 minutes before the exam starts.
+                    </p>
+                  </div>
+                  
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                    <div className="mb-2 flex justify-between">
+                      <h4 className="font-semibold text-white">Assignment Submission</h4>
+                      <span className="text-xs text-white/50">1 week ago</span>
+                    </div>
+                    <p className="text-sm text-white/70">
+                      Please submit your assignments by November 30, 2023. Late submissions will not be accepted without proper justification.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Schedules Tab */}
+          <TabsContent value="schedules" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Schedule</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Upload Schedule File
+                    </label>
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                      onChange={handleFileChange}
+                      className="border-white/10"
+                    />
+                    <p className="text-xs text-white/50">
+                      Accepted formats: PDF, DOC, DOCX, XLS, XLSX
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleUploadSchedule}
+                      disabled={isSaving || !scheduleFile}
+                    >
+                      {isSaving && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {!isSaving && <Upload className="mr-2 h-4 w-4" />}
+                      Upload Schedule
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Class Schedule</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Room</TableHead>
+                      <TableHead>Topic</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mockSchedules.length > 0 ? (
+                      mockSchedules.map((schedule) => (
+                        <TableRow key={schedule.id}>
+                          <TableCell>
+                            {new Date(schedule.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{schedule.time}</TableCell>
+                          <TableCell>{schedule.room}</TableCell>
+                          <TableCell>{schedule.topic}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <Info className="mb-2 h-8 w-8 text-blue-400" />
+                            <p className="text-white/70">No schedules have been added yet.</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
       
-      {/* Add Notice Dialog */}
-      <Dialog open={isAddNoticeDialogOpen} onOpenChange={setIsAddNoticeDialogOpen}>
-        <DialogContent className="bg-cuet-navy border border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-white">Post a Notice</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title" className="text-white">
-                Title
-              </Label>
-              <Input
-                id="title"
-                name="title"
-                value={noticeForm.title}
-                onChange={handleNoticeInputChange}
-                placeholder="Notice title"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="content" className="text-white">
-                Content
-              </Label>
-              <Textarea
-                id="content"
-                name="content"
-                value={noticeForm.content}
-                onChange={handleNoticeInputChange}
-                placeholder="Notice content"
-                className="min-h-[100px] bg-white/5 border-white/10 text-white placeholder:text-white/50"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsAddNoticeDialogOpen(false)}
-              className="bg-white/5 text-white hover:bg-white/10 border-white/10"
+      {/* Attendance Report Dialog */}
+      <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Generate Attendance Report</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate a downloadable attendance report for all students in this class.
+              Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                toast({
+                  title: "Report Generated",
+                  description: "Attendance report has been generated and is ready to download.",
+                });
+                setIsAlertDialogOpen(false);
+              }}
             >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handlePostNotice}
-              className="bg-gradient-to-r from-blue-600 to-blue-800"
-            >
-              <Send className="mr-2 h-4 w-4" />
-              Post Notice
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Upload Schedule Dialog */}
-      <Dialog open={isUploadScheduleDialogOpen} onOpenChange={setIsUploadScheduleDialogOpen}>
-        <DialogContent className="bg-cuet-navy border border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-white">Upload Schedule</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="schedule-file" className="text-white">
-                Schedule File (PDF or Image)
-              </Label>
-              <Input
-                id="schedule-file"
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={handleScheduleFileChange}
-                className="bg-white/5 border-white/10 text-white file:bg-blue-600 file:text-white file:border-0"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsUploadScheduleDialogOpen(false)}
-              className="bg-white/5 text-white hover:bg-white/10 border-white/10"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUploadSchedule}
-              className="bg-gradient-to-r from-blue-600 to-blue-800"
-              disabled={!scheduleFile}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Schedule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              Generate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
