@@ -11,6 +11,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-20T09:15:00Z",
     responseDate: "2023-08-21T14:30:00Z",
+    enrolledAt: "2023-08-21T14:30:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-2",
@@ -21,6 +22,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-20T10:45:00Z",
     responseDate: "2023-08-21T14:35:00Z",
+    enrolledAt: "2023-08-21T14:35:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-3",
@@ -31,6 +33,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-21T08:30:00Z",
     responseDate: "2023-08-22T11:15:00Z",
+    enrolledAt: "2023-08-22T11:15:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-4",
@@ -41,6 +44,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-22T14:20:00Z",
     responseDate: "2023-08-23T09:45:00Z",
+    enrolledAt: "2023-08-23T09:45:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-5",
@@ -51,6 +55,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-20T11:10:00Z",
     responseDate: "2023-08-21T16:20:00Z",
+    enrolledAt: "2023-08-21T16:20:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-6",
@@ -61,6 +66,7 @@ export const mockEnrollments: Enrollment[] = [
     status: "approved",
     requestDate: "2023-08-21T13:40:00Z",
     responseDate: "2023-08-22T10:05:00Z",
+    enrolledAt: "2023-08-22T10:05:00Z", // Added enrolledAt property
   },
   {
     id: "enrollment-7",
@@ -70,6 +76,7 @@ export const mockEnrollments: Enrollment[] = [
     studentName: "Saima Khan",
     status: "pending",
     requestDate: "2023-08-25T09:30:00Z",
+    enrolledAt: "", // Added empty enrolledAt for pending requests
   },
   {
     id: "enrollment-8",
@@ -79,5 +86,6 @@ export const mockEnrollments: Enrollment[] = [
     studentName: "Karim Rahman",
     status: "pending",
     requestDate: "2023-08-26T15:20:00Z",
+    enrolledAt: "", // Added empty enrolledAt for pending requests
   },
 ];

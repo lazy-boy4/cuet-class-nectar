@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { fetchNotices } from "@/api/admin";
+import { fetchNotices } from "@/api"; // Updated import path
 import { Notice } from "@/types";
 
 const NoticeBoard = () => {
@@ -36,7 +37,7 @@ const NoticeBoard = () => {
 
   useEffect(() => {
     if (fetchedNotices) {
-      setNotices(fetchedNotices);
+      setNotices(fetchedNotices as Notice[]); // Type assertion
     }
   }, [fetchedNotices]);
 
@@ -71,12 +72,12 @@ const NoticeBoard = () => {
               </Badge>
             ) : (
               <Badge variant="outline" className="bg-green-500/10 text-green-400">
-                {notice.className || "Class Notice"} {/* Updated to handle missing className */}
+                {notice.className || "Class Notice"} {/* Handle potentially undefined className */}
               </Badge>
             )}
             <span>by</span>
             <span className="font-medium text-white/80">
-              {notice.authorName || notice.creatorName || "Admin"} {/* Updated to handle missing creatorName */}
+              {notice.authorName || notice.creatorName || "Admin"} {/* Handle potentially undefined names */}
             </span>
           </div>
         </CardHeader>

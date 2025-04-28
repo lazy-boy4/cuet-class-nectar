@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { 
   PieChart as PieChartIcon, 
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { fetchEnrollments, fetchNotices, fetchAttendance } from "@/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { mockUsers } from "@/api/mockData/users";
@@ -370,7 +371,7 @@ const StudentDashboard = () => {
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-400">
-                          {notice.className || "Class Notice"}
+                          {notice.className || notice.classId || "Class Notice"}
                         </Badge>
                       )}
                       <p className="mb-2 line-clamp-2 text-sm text-white/70">{notice.content}</p>

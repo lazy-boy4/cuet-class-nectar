@@ -54,22 +54,20 @@ const ClassManagement = () => {
   const [classToEdit, setClassToEdit] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
   
-  // Form state for new/edit class
   const [formData, setFormData] = useState({
-    departmentCode: "", // Changed from departmentId to departmentCode
+    departmentCode: "",
     session: "",
     section: "",
     courseId: "",
   });
   
-  // Filter classes based on search term and filters
   const filteredClasses = mockClasses.filter((classItem) => {
     const searchMatch =
       classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       classItem.courseName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const departmentMatch = departmentFilter
-      ? classItem.departmentCode === departmentFilter // Changed from departmentId to departmentCode
+      ? classItem.departmentCode === departmentFilter
       : true;
     
     const sessionMatch = sessionFilter
@@ -79,12 +77,10 @@ const ClassManagement = () => {
     return searchMatch && departmentMatch && sessionMatch;
   });
   
-  // Get unique sessions from classes
   const sessions = Array.from(
     new Set(mockClasses.map((classItem) => classItem.session))
   );
   
-  // Handle opening the dialog for adding a new class
   const handleAddClass = () => {
     setClassToEdit(null);
     setFormData({
@@ -96,11 +92,10 @@ const ClassManagement = () => {
     setIsDialogOpen(true);
   };
   
-  // Handle opening the dialog for editing a class
   const handleEditClass = (classItem: Class) => {
     setClassToEdit(classItem);
     setFormData({
-      departmentCode: classItem.departmentCode, // Changed from departmentId to departmentCode
+      departmentCode: classItem.departmentCode,
       session: classItem.session,
       section: classItem.section,
       courseId: classItem.courseId,
@@ -108,9 +103,7 @@ const ClassManagement = () => {
     setIsDialogOpen(true);
   };
   
-  // Handle form submission for adding/editing a class
   const handleSubmit = async () => {
-    // Validate form data
     if (!formData.departmentCode || !formData.session || !formData.section || !formData.courseId) {
       toast({
         variant: "destructive",
@@ -123,24 +116,20 @@ const ClassManagement = () => {
     setIsSubmitting(true);
     
     try {
-      // In a real app, this would make an API call to save the data
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       
       if (classToEdit) {
-        // Update existing class
         toast({
           title: "Class Updated",
           description: "The class has been updated successfully.",
         });
       } else {
-        // Add new class
         toast({
           title: "Class Added",
           description: "The class has been added successfully.",
         });
       }
       
-      // Close dialog
       setIsDialogOpen(false);
     } catch (error) {
       toast({
@@ -153,28 +142,24 @@ const ClassManagement = () => {
     }
   };
   
-  // Handle opening the alert dialog for deleting a class
   const handleDeleteClick = (classItem: Class) => {
     setClassToDelete(classItem);
     setIsAlertDialogOpen(true);
   };
   
-  // Handle confirming class deletion
   const handleDeleteConfirm = async () => {
     if (!classToDelete) return;
     
     setIsSubmitting(true);
     
     try {
-      // In a real app, this would make an API call to delete the data
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       
       toast({
         title: "Class Deleted",
         description: "The class has been deleted successfully.",
       });
       
-      // Close alert dialog
       setIsAlertDialogOpen(false);
     } catch (error) {
       toast({
@@ -187,21 +172,18 @@ const ClassManagement = () => {
     }
   };
   
-  // Get course name from ID
   const getCourseName = (courseId: string) => {
     const course = mockCourses.find((c) => c.id === courseId);
     return course ? `${course.code} - ${course.name}` : "Unknown Course";
   };
   
-  // Get department name from ID
   const getDepartmentName = (departmentCode: string): string => {
     const department = mockDepartments.find((d) => d.id === departmentCode || d.code === departmentCode);
     return department ? department.name : "Unknown Department";
   };
   
-  // Filter courses by department
   const filteredCourses = mockCourses.filter(
-    (course) => !formData.departmentCode || course.departmentId === formData.departmentId // Changed from departmentId to departmentCode
+    (course) => !formData.departmentCode || course.departmentId === formData.departmentCode
   );
   
   return (
@@ -209,7 +191,6 @@ const ClassManagement = () => {
       title="Class Management"
       description="Create and manage classes for different courses, departments, and sessions"
     >
-      {/* Search and Filters */}
       <div className="mb-6 flex flex-wrap items-center gap-4">
         <div className="flex items-center space-x-2">
           <Search className="h-5 w-5 text-gray-400" />
@@ -257,7 +238,6 @@ const ClassManagement = () => {
         </div>
       </div>
       
-      {/* Classes Table */}
       <div className="rounded-md border border-white/10">
         <Table>
           <TableHeader>
@@ -275,11 +255,11 @@ const ClassManagement = () => {
                 <TableRow key={classItem.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium text-white">{classItem.courseCode}</div> {/* Using courseCode property directly from the class */}
+                      <div className="font-medium text-white">{classItem.courseCode}</div>
                       <div className="text-sm text-white/70">{classItem.courseName}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getDepartmentName(classItem.departmentCode)}</TableCell> {/* Fixed: Changed from departmentId to departmentCode */}
+                  <TableCell>{getDepartmentName(classItem.departmentCode)}</TableCell>
                   <TableCell>{classItem.session}</TableCell>
                   <TableCell>{classItem.section}</TableCell>
                   <TableCell className="text-right">
@@ -316,7 +296,6 @@ const ClassManagement = () => {
         </Table>
       </div>
       
-      {/* Add/Edit Class Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -431,7 +410,6 @@ const ClassManagement = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Class Confirmation Dialog */}
       <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
