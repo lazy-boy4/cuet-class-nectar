@@ -1,13 +1,12 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Book, Plus, Edit, Trash2 } from "lucide-react";
+import { Book, Pencil, Trash, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import DashboardLayout from "@/components/DashboardLayout";
+import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,40 +43,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  fetchCourses,
-  fetchDepartments,
-  createCourse,
-  updateCourse,
-  deleteCourse,
-} from "@/api";
+import { mockDepartments } from "@/api/mockData/departments";
 import { Course, Department } from "@/types";
 
 const CourseManagement = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // State for the course form
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  
   const [formData, setFormData] = useState<Partial<Course>>({
     code: "",
     name: "",
@@ -68,85 +60,211 @@ const CourseManagement = () => {
     departmentId: "",
   });
   
-  useEffect(() => {
-    document.title = "Course Management - CUET Class Management System";
-    
-    // Check if user is authenticated and is an admin
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "admin") {
-      navigate("/login");
-    }
-  }, [navigate]);
+  // Mock courses data
+  const mockCourses: Course[] = [
+    {
+      id: "course-1",
+      code: "CSE-101",
+      name: "Introduction to Computer Science",
+      credits: 3,
+      departmentId: "dept-1",
+    },
+    {
+      id: "course-2",
+      code: "CSE-201",
+      name: "Data Structures",
+      credits: 3,
+      departmentId: "dept-1",
+    },
+    {
+      id: "course-3",
+      code: "EEE-101",
+      name: "Basic Electrical Engineering",
+      credits: 3,
+      departmentId: "dept-2",
+    },
+    {
+      id: "course-4",
+      code: "MATH-101",
+      name: "Calculus and Linear Algebra",
+      credits: 3,
+      departmentId: "dept-3",
+    },
+    {
+      id: "course-5",
+      code: "CSE-202",
+      name: "Algorithms",
+      credits: 4,
+      departmentId: "dept-1",
+    },
+  ];
   
-  // Fetch courses
-  const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
+  // Query to fetch courses
+  const {
+    data: courses = mockCourses,
+    isLoading: isCoursesLoading,
+  } = useQuery({
     queryKey: ["courses"],
-    queryFn: fetchCourses,
+    queryFn: async () => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return mockCourses;
+      
+      // In a real app, this would be:
+      // const response = await axios.get('/api/courses');
+      // return response.data;
+    },
   });
   
-  // Fetch departments (for the department dropdown)
-  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
+  // Query to fetch departments
+  const {
+    data: departments = mockDepartments,
+    isLoading: isDepartmentsLoading,
+  } = useQuery({
     queryKey: ["departments"],
-    queryFn: fetchDepartments,
-  });
-  
-  // Create course mutation
-  const createMutation = useMutation({
-    mutationFn: createCourse,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      toast({
-        title: "Course created",
-        description: "The course has been successfully created.",
-      });
-      handleCloseDialog();
+    queryFn: async () => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return mockDepartments;
+      
+      // In a real app, this would be:
+      // const response = await axios.get('/api/departments');
+      // return response.data;
     },
   });
   
-  // Update course mutation
-  const updateMutation = useMutation({
-    mutationFn: updateCourse,
+  // Mutation for creating a course
+  const createCourseMutation = useMutation({
+    mutationFn: async (courseData: Omit<Course, "id">) => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Generate a new course with a random ID
+      const newCourse = {
+        id: `course-${Date.now()}`,
+        ...courseData,
+      };
+      
+      return newCourse;
+      
+      // In a real app, this would be:
+      // const response = await axios.post('/api/courses', courseData);
+      // return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
+      resetForm();
+      setIsDialogOpen(false);
       toast({
-        title: "Course updated",
-        description: "The course has been successfully updated.",
+        title: "Success",
+        description: `Course ${isEditing ? "updated" : "created"} successfully.`,
       });
-      handleCloseDialog();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? "update" : "create"} course. Please try again.`,
+        variant: "destructive",
+      });
+      console.error(error);
     },
   });
   
-  // Delete course mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteCourse(id),
+  // Mutation for updating a course
+  const updateCourseMutation = useMutation({
+    mutationFn: async (courseData: Course) => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      return courseData;
+      
+      // In a real app, this would be:
+      // const response = await axios.put(`/api/courses/${courseData.id}`, courseData);
+      // return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
+      resetForm();
+      setIsDialogOpen(false);
       toast({
-        title: "Course deleted",
-        description: "The course has been successfully deleted.",
+        title: "Success",
+        description: "Course updated successfully.",
       });
-      setDeleteId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update course. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
     },
   });
   
-  // Handle form input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Mutation for deleting a course
+  const deleteCourseMutation = useMutation({
+    mutationFn: async (courseId: string) => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      return { success: true };
+      
+      // In a real app, this would be:
+      // await axios.delete(`/api/courses/${courseId}`);
+      // return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      toast({
+        title: "Success",
+        description: "Course deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete course. Please try again.",
+        variant: "destructive",
+      });
+      console.error(error);
+    },
+  });
+  
+  // Function to reset form state
+  const resetForm = () => {
+    setFormData({
+      code: "",
+      name: "",
+      credits: 3,
+      departmentId: "",
+    });
+    setIsEditing(false);
+  };
+  
+  // Function to handle form input changes
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: name === "credits" ? Number(value) : value 
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === "credits" ? Number(value) : value,
     }));
   };
   
-  // Handle department selection
+  // Function to handle department selection
   const handleDepartmentChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, departmentId: value }));
+    setFormData(prev => ({
+      ...prev,
+      departmentId: value,
+    }));
   };
   
-  // Handle form submit
+  // Function to handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form data
     if (!formData.code || !formData.name || !formData.departmentId || formData.credits === undefined) {
       toast({
         title: "Validation Error",
@@ -156,278 +274,277 @@ const CourseManagement = () => {
       return;
     }
     
-    if (formData.credits < 1) {
+    // Check for unique code
+    if (!isEditing && courses.some(course => course.code === formData.code)) {
       toast({
         title: "Validation Error",
-        description: "Credits must be at least 1.",
+        description: "Course code must be unique.",
         variant: "destructive",
       });
       return;
     }
     
+    // Check for valid credits
+    if (formData.credits <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Credits must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Submit the form based on whether we're editing or creating
     if (isEditing && formData.id) {
-      updateMutation.mutate(formData as Course);
+      updateCourseMutation.mutate(formData as Course);
     } else {
-      createMutation.mutate(formData as Omit<Course, "id">);
+      createCourseMutation.mutate(formData as Omit<Course, "id">);
     }
   };
   
-  // Open dialog for creating or editing
-  const openDialog = (course?: Course) => {
-    if (course) {
-      setFormData({ ...course });
-      setIsEditing(true);
-    } else {
-      setFormData({ code: "", name: "", credits: 3, departmentId: "" });
-      setIsEditing(false);
-    }
+  // Function to handle edit button click
+  const handleEditClick = (course: Course) => {
+    setFormData(course);
+    setIsEditing(true);
     setIsDialogOpen(true);
   };
   
-  // Handle close dialog
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setFormData({ code: "", name: "", credits: 3, departmentId: "" });
-    setIsEditing(false);
+  // Function to handle delete button click
+  const handleDeleteClick = (courseId: string) => {
+    deleteCourseMutation.mutate(courseId);
   };
   
-  // Handle delete course
-  const handleDelete = () => {
-    if (deleteId) {
-      deleteMutation.mutate(deleteId);
-    }
-  };
-  
-  // Get department name by ID
+  // Function to find department name by ID
   const getDepartmentName = (departmentId: string) => {
-    const department = departments.find((dept) => dept.id === departmentId);
-    return department ? `${department.code} - ${department.name}` : "Unknown";
+    const department = departments.find(dept => dept.id === departmentId);
+    return department ? department.name : "Unknown Department";
   };
   
-  const isLoading = isLoadingCourses || isLoadingDepartments;
-
   return (
-    <DashboardLayout
+    <AdminLayout
       title="Course Management"
-      description="Manage courses offered by departments"
+      description="Add, edit, and manage courses in the system"
     >
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center">
-          <Book className="mr-2 h-6 w-6 text-blue-400" />
-          <h2 className="text-2xl font-semibold text-white">Courses</h2>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <Button
-            onClick={() => openDialog()}
-            className="bg-gradient-to-r from-blue-600 to-blue-800"
-            disabled={departments.length === 0}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Course
-          </Button>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {isEditing ? "Edit Course" : "Add New Course"}
-              </DialogTitle>
-              <DialogDescription>
-                {isEditing
-                  ? "Update the course details below."
-                  : "Enter the details for the new course."}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="code" className="text-right">
-                    Code*
-                  </Label>
-                  <Input
-                    id="code"
-                    name="code"
-                    value={formData.code}
-                    onChange={handleInputChange}
-                    placeholder="CSE-101"
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name*
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Introduction to Programming"
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="credits" className="text-right">
-                    Credits*
-                  </Label>
-                  <Input
-                    id="credits"
-                    name="credits"
-                    type="number"
-                    min={1}
-                    value={formData.credits}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="department" className="text-right">
-                    Department*
-                  </Label>
-                  <div className="col-span-3">
-                    <Select
-                      value={formData.departmentId}
-                      onValueChange={handleDepartmentChange}
+      <div className="space-y-6">
+        {/* Actions Bar */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Courses</h2>
+            <p className="text-white/70">
+              {isCoursesLoading
+                ? "Loading courses..."
+                : `${courses.length} courses in the system`}
+            </p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-blue-800"
+                onClick={() => {
+                  resetForm();
+                  setIsDialogOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Course
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white/10 backdrop-blur-sm border border-white/10">
+              <DialogHeader>
+                <DialogTitle className="text-white">
+                  {isEditing ? "Edit Course" : "Add New Course"}
+                </DialogTitle>
+                <DialogDescription className="text-white/70">
+                  {isEditing
+                    ? "Update the course information below."
+                    : "Fill in the details to create a new course."}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="code" className="text-right text-white/70">
+                      Course Code
+                    </Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      value={formData.code}
+                      onChange={handleInputChange}
+                      placeholder="e.g., CSE-101"
+                      className="col-span-3 bg-white/5 border-white/10 text-white"
                       required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((department) => (
-                          <SelectItem key={department.id} value={department.id}>
-                            {department.code} - {department.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right text-white/70">
+                      Course Name
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Introduction to Programming"
+                      className="col-span-3 bg-white/5 border-white/10 text-white"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="credits" className="text-right text-white/70">
+                      Credits
+                    </Label>
+                    <Input
+                      id="credits"
+                      name="credits"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={formData.credits}
+                      onChange={handleInputChange}
+                      className="col-span-3 bg-white/5 border-white/10 text-white"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="department" className="text-right text-white/70">
+                      Department
+                    </Label>
+                    <div className="col-span-3">
+                      <Select
+                        value={formData.departmentId}
+                        onValueChange={handleDepartmentChange}
+                      >
+                        <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+                          <SelectValue placeholder="Select a department" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-cuet-navy border border-white/10">
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id} className="text-white hover:bg-white/10">
+                              {dept.name} ({dept.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCloseDialog}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? "Processing..."
-                    : isEditing
-                    ? "Save Changes"
-                    : "Add Course"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-      
-      <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <p className="text-white/70">Loading courses...</p>
-            </div>
-          ) : courses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10">
-              <Book className="mb-2 h-12 w-12 text-white/30" />
-              <p className="text-white">No courses found</p>
-              <p className="text-sm text-white/70">
-                Add your first course to get started
-              </p>
-              {departments.length === 0 && (
-                <div className="mt-4 rounded-md bg-yellow-500/10 p-4 text-yellow-400">
-                  <p>You need to add departments before you can add courses.</p>
+                <DialogFooter>
                   <Button
-                    className="mt-2"
+                    type="button"
                     variant="outline"
-                    onClick={() => navigate("/admin/departments")}
+                    onClick={() => {
+                      resetForm();
+                      setIsDialogOpen(false);
+                    }}
                   >
-                    Go to Department Management
+                    Cancel
                   </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-white/5">
-                  <TableHead className="w-[120px] text-white/70">Code</TableHead>
-                  <TableHead className="text-white/70">Name</TableHead>
-                  <TableHead className="w-[200px] text-white/70">Department</TableHead>
-                  <TableHead className="w-[100px] text-white/70">Credits</TableHead>
-                  <TableHead className="w-[120px] text-right text-white/70">
-                    Actions
-                  </TableHead>
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-blue-600 to-blue-800"
+                    disabled={createCourseMutation.isPending || updateCourseMutation.isPending}
+                  >
+                    {(createCourseMutation.isPending || updateCourseMutation.isPending) && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isEditing ? "Update" : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Courses Table */}
+        <div className="border border-white/10 rounded-md overflow-hidden">
+          <Table>
+            <TableCaption>List of all courses in the system</TableCaption>
+            <TableHeader className="bg-white/5">
+              <TableRow>
+                <TableHead className="text-white/80 w-[150px]">Code</TableHead>
+                <TableHead className="text-white/80">Name</TableHead>
+                <TableHead className="text-white/80">Credits</TableHead>
+                <TableHead className="text-white/80">Department</TableHead>
+                <TableHead className="text-white/80 text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isCoursesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24 text-white/70">
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-2" />
+                      <span>Loading courses...</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {courses.map((course) => (
+              ) : courses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24 text-white/70">
+                    <Book className="mx-auto mb-2 h-8 w-8 text-white/30" />
+                    <p>No courses found</p>
+                    <Button
+                      variant="link"
+                      className="text-blue-400"
+                      onClick={() => setIsDialogOpen(true)}
+                    >
+                      Add your first course
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                courses.map((course) => (
                   <TableRow
                     key={course.id}
-                    className="border-white/10 hover:bg-white/5"
+                    className="border-b border-white/10 hover:bg-white/5"
                   >
-                    <TableCell className="font-medium text-white">
-                      {course.code}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      {course.name}
-                    </TableCell>
+                    <TableCell className="font-medium text-white">{course.code}</TableCell>
+                    <TableCell className="text-white">{course.name}</TableCell>
+                    <TableCell className="text-white">{course.credits}</TableCell>
                     <TableCell className="text-white">
                       {getDepartmentName(course.departmentId)}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      {course.credits}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-blue-400 hover:text-blue-500 hover:bg-blue-700/20"
-                          onClick={() => openDialog(course)}
+                          className="text-white/70 hover:text-white hover:bg-white/10"
+                          onClick={() => handleEditClick(course)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-red-400 hover:text-red-500 hover:bg-red-700/20"
-                              onClick={() => setDeleteId(course.id)}
+                              className="text-white/70 hover:text-red-400 hover:bg-red-500/10"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="bg-white/10 backdrop-blur-md border border-white/10">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>
+                              <AlertDialogTitle className="text-white">
                                 Delete Course
                               </AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogDescription className="text-white/70">
                                 Are you sure you want to delete{" "}
-                                <span className="font-semibold">
+                                <span className="text-white font-medium">
                                   {course.name} ({course.code})
                                 </span>
                                 ? This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="border-white/10 bg-white/5 text-white hover:bg-white/10">
+                                Cancel
+                              </AlertDialogCancel>
                               <AlertDialogAction
-                                className="bg-red-600 hover:bg-red-700"
-                                onClick={handleDelete}
+                                className="bg-red-500 hover:bg-red-600"
+                                onClick={() => handleDeleteClick(course.id)}
                               >
                                 Delete
                               </AlertDialogAction>
@@ -437,13 +554,13 @@ const CourseManagement = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </DashboardLayout>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </AdminLayout>
   );
 };
 
