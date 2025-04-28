@@ -50,6 +50,11 @@ const Footer = () => {
                   Login
                 </Link>
               </li>
+              <li>
+                <Link to="/admin-login" className="hover:text-white">
+                  Admin Login
+                </Link>
+              </li>
             </ul>
           </div>
 
