@@ -50,17 +50,21 @@ const Profile = () => {
     queryKey: ["studentProfile", userId],
     queryFn: () => fetchStudentProfile(userId as string),
     enabled: !!userId,
-    onSuccess: (data) => {
-      setFormData({
-        name: data.name,
-        email: data.email,
-        department: data.department || "",
-        session: data.session || "",
-        section: data.section || "",
-        profileImage: data.profileImage || "",
-      });
-    },
   });
+  
+  // Update form data when profile is loaded
+  useEffect(() => {
+    if (studentProfile) {
+      setFormData({
+        name: studentProfile.name,
+        email: studentProfile.email,
+        department: studentProfile.department || "",
+        session: studentProfile.session || "",
+        section: studentProfile.section || "",
+        profileImage: studentProfile.profileImage || "",
+      });
+    }
+  }, [studentProfile]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -172,15 +176,15 @@ const Profile = () => {
                   size="sm"
                   onClick={() => {
                     setIsEditing(false);
-                    // Reset form data to original values
-                    if (currentUser) {
+                    // Reset form data to original values if profile exists
+                    if (studentProfile) {
                       setFormData({
-                        name: currentUser.name,
-                        email: currentUser.email,
-                        department: currentUser.department || "",
-                        session: currentUser.session || "",
-                        section: currentUser.section || "",
-                        profileImage: currentUser.profileImage || "",
+                        name: studentProfile.name,
+                        email: studentProfile.email,
+                        department: studentProfile.department || "",
+                        session: studentProfile.session || "",
+                        section: studentProfile.section || "",
+                        profileImage: studentProfile.profileImage || "",
                       });
                     }
                   }}
