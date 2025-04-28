@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Search, X } from "lucide-react";
@@ -81,17 +80,17 @@ const AssignTeachers = () => {
   );
   
   // Filter classes based on search term and department filter
-  const classes = mockClasses.filter((classItem) => {
-    const searchMatch =
-      classItem.courseCode.toLowerCase().includes(classSearchTerm.toLowerCase()) ||
-      classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
-      
-    const departmentMatch = departmentFilter
-      ? classItem.departmentId === departmentFilter
-      : true;
-      
-    return searchMatch && departmentMatch;
-  });
+const classes = mockClasses.filter((classItem) => {
+  const searchMatch =
+    classItem.courseCode.toLowerCase().includes(classSearchTerm.toLowerCase()) ||
+    classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
+    
+  const departmentMatch = departmentFilter
+    ? classItem.departmentCode === departmentFilter // Changed from departmentId to departmentCode
+    : true;
+    
+  return searchMatch && departmentMatch;
+});
   
   // Handle opening the dialog for adding a new assignment
   const handleAddAssignment = () => {
@@ -203,24 +202,24 @@ const AssignTeachers = () => {
       ? {
           courseCode: classItem.courseCode,
           courseName: classItem.courseName,
-          departmentId: classItem.departmentId,
+          departmentCode: classItem.departmentCode,
           session: classItem.session,
           section: classItem.section,
         }
       : {
           courseCode: "Unknown",
           courseName: "Unknown",
-          departmentId: "",
+          departmentCode: "",
           session: "",
           section: "",
         };
   };
   
-  // Get department name by ID
-  const getDepartmentName = (departmentId: string) => {
-    const department = mockDepartments.find((d) => d.id === departmentId);
-    return department ? department.name : "Unknown Department";
-  };
+  // Get department name from ID
+const getDepartmentName = (departmentCode: string): string => {
+  const department = mockDepartments.find((d) => d.id === departmentCode || d.code === departmentCode);
+  return department ? department.name : departmentCode;
+};
   
   return (
     <DashboardLayout
@@ -279,9 +278,9 @@ const AssignTeachers = () => {
                         {classDetails.courseName}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {getDepartmentName(classDetails.departmentId)}
-                    </TableCell>
+<TableCell>
+  {getDepartmentName(classDetails.departmentCode)} {/* Changed from departmentId to departmentCode */}
+</TableCell>
                     <TableCell>
                       {classDetails.session}, Section {classDetails.section}
                     </TableCell>
@@ -398,20 +397,20 @@ const AssignTeachers = () => {
                     <SelectValue placeholder="Select Class" />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes.length > 0 ? (
-                      classes.map((classItem: Class) => {
-                        const departmentName = getDepartmentName(classItem.departmentId);
-                        return (
-                          <SelectItem key={classItem.id} value={classItem.id}>
-                            {classItem.courseCode} - {departmentName}, {classItem.session}
-                          </SelectItem>
-                        );
-                      })
-                    ) : (
-                      <div className="p-2 text-center text-sm text-white/60">
-                        No classes found. Try adjusting your search or filter.
-                      </div>
-                    )}
+{classes.length > 0 ? (
+  classes.map((classItem: Class) => {
+    const departmentName = getDepartmentName(classItem.departmentCode); // Changed from departmentId to departmentCode
+    return (
+      <SelectItem key={classItem.id} value={classItem.id}>
+        {classItem.courseCode} - {departmentName}, {classItem.session}
+      </SelectItem>
+    );
+  })
+) : (
+  <div className="p-2 text-center text-sm text-white/60">
+    No classes found. Try adjusting your search or filter.
+  </div>
+)}
                   </SelectContent>
                 </Select>
               </div>

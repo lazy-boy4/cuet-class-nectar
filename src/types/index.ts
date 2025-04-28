@@ -31,6 +31,7 @@ export interface Department {
 export interface Course {
   id: string;
   departmentId: string;
+  departmentCode?: string; // Added for mock data compatibility
   code: string;
   name: string;
   credits: number;
@@ -40,6 +41,7 @@ export interface Course {
 export interface Class {
   id: string;
   departmentCode: string;
+  departmentId?: string; // Added for mock data compatibility
   courseId: string;
   courseCode?: string;
   courseName?: string;
@@ -48,6 +50,7 @@ export interface Class {
   teacherId?: string;
   teacherName?: string;
   schedule?: Schedule[];
+  code?: string; // Added for mock data compatibility
 }
 
 // Schedule model
@@ -60,6 +63,8 @@ export interface Schedule {
   roomNumber: string;
   dateTime?: string; // For upcoming schedules display
   title?: string; // For display purposes
+  day?: string; // Added for mock data compatibility
+  room?: string; // Added for mock data compatibility
 }
 
 // Attendance model
@@ -70,6 +75,8 @@ export interface Attendance {
   date: string;
   status: 'present' | 'absent' | 'late';
   comments?: string; // Optional comments on attendance
+  className?: string; // Added for mock data compatibility
+  studentName?: string; // Added for mock data compatibility
 }
 
 // Notice model
@@ -83,6 +90,8 @@ export interface Notice {
   createdAt: string;
   authorId?: string;
   authorName?: string;
+  createdBy?: string; // Added for mock data compatibility
+  creatorName?: string; // Added for mock data compatibility
   date?: string; // For display purposes
   author?: string; // For display purposes
 }
@@ -94,6 +103,10 @@ export interface Enrollment {
   classId: string;
   status: 'pending' | 'approved' | 'rejected';
   enrolledAt: string;
+  className?: string; // Added for mock data compatibility
+  studentName?: string; // Added for mock data compatibility
+  requestDate?: string; // Added for mock data compatibility
+  responseDate?: string; // Added for mock data compatibility
 }
 
 // Auth response model

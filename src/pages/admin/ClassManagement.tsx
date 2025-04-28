@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Edit, Loader2, Plus, Search, Trash2 } from "lucide-react";
@@ -57,7 +56,7 @@ const ClassManagement = () => {
   
   // Form state for new/edit class
   const [formData, setFormData] = useState({
-    departmentId: "", // Fixed: Changed from department to departmentId
+    departmentCode: "", // Changed from departmentId to departmentCode
     session: "",
     section: "",
     courseId: "",
@@ -68,15 +67,15 @@ const ClassManagement = () => {
     const searchMatch =
       classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       classItem.courseName.toLowerCase().includes(searchTerm.toLowerCase());
-      
+    
     const departmentMatch = departmentFilter
-      ? classItem.departmentId === departmentFilter // Fixed: Changed from department to departmentId
+      ? classItem.departmentCode === departmentFilter // Changed from departmentId to departmentCode
       : true;
-      
+    
     const sessionMatch = sessionFilter
       ? classItem.session === sessionFilter
       : true;
-      
+    
     return searchMatch && departmentMatch && sessionMatch;
   });
   
@@ -89,7 +88,7 @@ const ClassManagement = () => {
   const handleAddClass = () => {
     setClassToEdit(null);
     setFormData({
-      departmentId: "",
+      departmentCode: "",
       session: "",
       section: "",
       courseId: "",
@@ -101,7 +100,7 @@ const ClassManagement = () => {
   const handleEditClass = (classItem: Class) => {
     setClassToEdit(classItem);
     setFormData({
-      departmentId: classItem.departmentId, // Fixed: Changed from department to departmentId
+      departmentCode: classItem.departmentCode, // Changed from departmentId to departmentCode
       session: classItem.session,
       section: classItem.section,
       courseId: classItem.courseId,
@@ -112,7 +111,7 @@ const ClassManagement = () => {
   // Handle form submission for adding/editing a class
   const handleSubmit = async () => {
     // Validate form data
-    if (!formData.departmentId || !formData.session || !formData.section || !formData.courseId) {
+    if (!formData.departmentCode || !formData.session || !formData.section || !formData.courseId) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -195,14 +194,14 @@ const ClassManagement = () => {
   };
   
   // Get department name from ID
-  const getDepartmentName = (departmentId: string) => {
-    const department = mockDepartments.find((d) => d.id === departmentId);
+  const getDepartmentName = (departmentCode: string): string => {
+    const department = mockDepartments.find((d) => d.id === departmentCode || d.code === departmentCode);
     return department ? department.name : "Unknown Department";
   };
   
   // Filter courses by department
   const filteredCourses = mockCourses.filter(
-    (course) => !formData.departmentId || course.departmentId === formData.departmentId // Fixed: Changed from department to departmentId
+    (course) => !formData.departmentCode || course.departmentId === formData.departmentId // Changed from departmentId to departmentCode
   );
   
   return (
@@ -280,7 +279,7 @@ const ClassManagement = () => {
                       <div className="text-sm text-white/70">{classItem.courseName}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getDepartmentName(classItem.departmentId)}</TableCell> {/* Fixed: Changed from department to departmentId */}
+                  <TableCell>{getDepartmentName(classItem.departmentCode)}</TableCell> {/* Fixed: Changed from departmentId to departmentCode */}
                   <TableCell>{classItem.session}</TableCell>
                   <TableCell>{classItem.section}</TableCell>
                   <TableCell className="text-right">
@@ -336,9 +335,9 @@ const ClassManagement = () => {
               </label>
               <div className="col-span-3">
                 <Select
-                  value={formData.departmentId}
+                  value={formData.departmentCode}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, departmentId: value, courseId: "" })
+                    setFormData({ ...formData, departmentCode: value, courseId: "" })
                   }
                 >
                   <SelectTrigger className="border-white/10">
@@ -399,7 +398,7 @@ const ClassManagement = () => {
                   onValueChange={(value) =>
                     setFormData({ ...formData, courseId: value })
                   }
-                  disabled={!formData.departmentId}
+                  disabled={!formData.departmentCode}
                 >
                   <SelectTrigger className="border-white/10">
                     <SelectValue placeholder="Select Course" />

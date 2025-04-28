@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +22,33 @@ import { mockAttendance } from "@/api/mockData/attendance";
 import { mockSchedules } from "@/api/mockData/schedules";
 import { mockNotices } from "@/api/mockData/notices";
 import { Attendance, Class } from "@/types";
+
+const formatAttendanceData = (data: any) => {
+  if (!data) return [];
+  
+  // Ensure we're not trying to access properties that don't exist
+  const attendanceByMonth = data.reduce((acc: any, record: Attendance) => {
+    // Extract month from date string
+    const month = new Date(record.date).toLocaleString('default', { month: 'short' });
+    
+    if (!acc[month]) {
+      acc[month] = {
+        month,
+        present: 0,
+        absent: 0,
+        late: 0,
+        total: 0,
+      };
+    }
+    
+    acc[month][record.status]++;
+    acc[month].total++;
+    
+    return acc;
+  }, {});
+  
+  return Object.values(attendanceByMonth);
+};
 
 const ClassDetails = () => {
   const { classId } = useParams<{ classId: string }>();

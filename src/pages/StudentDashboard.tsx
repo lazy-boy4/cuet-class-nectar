@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +20,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { mockUsers } from "@/api/mockData/users";
 import { mockClasses } from "@/api/mockData/classes";
 
-// Define a type for the attendance stats
 interface AttendanceStats {
   present: number;
   absent: number;
@@ -38,46 +36,38 @@ const StudentDashboard = () => {
   useEffect(() => {
     document.title = "Student Dashboard - CUET Class Management System";
     
-    // Check if user is authenticated
     const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
     if (!userRole || userRole !== "student") {
       navigate("/login");
       return;
     }
     
-    // Get mock current user (in a real app, this would come from authentication)
-    // Here we're just using a student from our mock data
     const student = mockUsers.find(u => u.role === "student");
     if (student) {
       setCurrentUser(student);
     }
   }, [navigate]);
   
-  // Fetch enrolled classes for the current student
   const { data: enrollments = [] } = useQuery({
     queryKey: ["studentEnrollments", currentUser?.id],
     queryFn: () => fetchEnrollments(currentUser?.id),
     enabled: !!currentUser,
   });
   
-  // Fetch notices
   const { data: notices = [] } = useQuery({
     queryKey: ["studentNotices"],
     queryFn: () => fetchNotices(),
     enabled: !!currentUser,
   });
   
-  // Get enrolled class IDs
   const enrolledClassIds = enrollments
     .filter(e => e.status === "approved")
     .map(e => e.classId);
   
-  // Get enrolled classes details
   const enrolledClasses = mockClasses.filter(c => 
     enrolledClassIds.includes(c.id)
   );
   
-  // Fetch attendance for all enrolled classes
   const { data: attendanceData = [] } = useQuery({
     queryKey: ["studentAttendance", currentUser?.id, enrolledClassIds],
     queryFn: async () => {
@@ -93,7 +83,6 @@ const StudentDashboard = () => {
     enabled: !!currentUser && enrolledClassIds.length > 0,
   });
   
-  // Calculate attendance stats
   const calculateAttendanceStats = (): AttendanceStats => {
     const present = attendanceData.filter(a => a.status === "present").length;
     const absent = attendanceData.filter(a => a.status === "absent").length;
@@ -111,14 +100,12 @@ const StudentDashboard = () => {
   
   const attendanceStats = calculateAttendanceStats();
   
-  // Prepare data for pie chart
   const pieData = [
     { name: "Present", value: attendanceStats.present, color: "#10b981" },
     { name: "Late", value: attendanceStats.late, color: "#f59e0b" },
     { name: "Absent", value: attendanceStats.absent, color: "#ef4444" },
   ].filter(item => item.value > 0);
   
-  // Recent notices - get only global notices and class-specific notices for enrolled classes
   const recentNotices = notices
     .filter(notice => 
       notice.isGlobal || 
@@ -129,7 +116,6 @@ const StudentDashboard = () => {
     )
     .slice(0, 3);
   
-  // Format date for notices
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -145,9 +131,7 @@ const StudentDashboard = () => {
       description="View your academic progress and class information"
     >
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Left column - Class cards and attendance stats */}
         <div className="col-span-1 space-y-6 md:col-span-2">
-          {/* Enrolled Classes */}
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Enrolled Classes</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -204,7 +188,6 @@ const StudentDashboard = () => {
             </div>
           </section>
           
-          {/* Attendance Stats */}
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Attendance Overview</h2>
             <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
@@ -293,9 +276,7 @@ const StudentDashboard = () => {
           </section>
         </div>
         
-        {/* Right column - Quick actions and notices */}
         <div className="col-span-1 space-y-6">
-          {/* Quick Actions */}
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Quick Actions</h2>
             <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
@@ -367,7 +348,6 @@ const StudentDashboard = () => {
             </div>
           </section>
           
-          {/* Recent Notices */}
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Recent Notices</h2>
             <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
@@ -379,27 +359,29 @@ const StudentDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 divide-y divide-white/10">
                   {recentNotices.map((notice) => (
-                    <div key={notice.id} className="p-4">
-                      <div className="mb-1 flex justify-between">
-                        <h3 className="font-medium text-white">
-                          {notice.title}
-                        </h3>
-                        <span className="text-xs text-white/50">
-                          {formatDate(notice.createdAt)}
-                        </span>
+                    <div key={notice.id} className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                      <div className="mb-2 flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-white">{notice.title}</h4>
+                        <span className="text-xs text-white/60">{formatDate(notice.createdAt)}</span>
                       </div>
-                      <p className="mb-2 text-sm text-white/70 line-clamp-2">
-                        {notice.content}
-                      </p>
                       {notice.isGlobal ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-700/30 px-2 py-0.5 text-xs font-medium text-blue-400">
+                        <Badge variant="outline" className="mb-2 bg-blue-500/10 text-blue-400">
                           Global
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-purple-700/30 px-2 py-0.5 text-xs font-medium text-purple-400">
-                          {notice.className}
-                        </span>
+                        <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-400">
+                          {notice.className || "Class Notice"}
+                        </Badge>
                       )}
+                      <p className="mb-2 line-clamp-2 text-sm text-white/70">{notice.content}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 p-0 text-xs text-blue-400 hover:text-blue-300"
+                        asChild
+                      >
+                        <Link to="/notices">Read more</Link>
+                      </Button>
                     </div>
                   ))}
                 </div>

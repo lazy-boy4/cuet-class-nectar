@@ -110,7 +110,7 @@ export const fetchStudentAttendance = async (studentId: string, classId?: string
       
       return {
         classId: cls.id,
-        className: cls.code,
+        className: cls.courseCode || '', // Use courseCode instead of code
         percentage: total > 0 ? (present / total) * 100 : 0,
       };
     });
