@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Database, Plus, Edit, Trash2 } from "lucide-react";
+import { Database, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -27,7 +29,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { 
   Table, 
   TableBody, 
@@ -44,7 +45,7 @@ import {
 } from "@/api/admin";
 import { Department } from "@/types";
 
-const DepartmentManagement = () => {
+const DepartmentManagementNew = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -56,6 +57,10 @@ const DepartmentManagement = () => {
     code: "",
     name: "",
   });
+  
+  useEffect(() => {
+    document.title = "Department Management - CUET Class Management System";
+  }, []);
   
   // Fetch departments
   const { data: departments = [], isLoading } = useQuery({
@@ -245,7 +250,8 @@ const DepartmentManagement = () => {
       <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-10">
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="mr-2 h-6 w-6 animate-spin text-blue-400" />
               <p className="text-white/70">Loading departments...</p>
             </div>
           ) : departments.length === 0 ? (
@@ -338,4 +344,4 @@ const DepartmentManagement = () => {
   );
 };
 
-export default DepartmentManagement;
+export default DepartmentManagementNew;

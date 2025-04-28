@@ -3,13 +3,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Camera, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { mockUsers } from "@/api/mockData/users";
+import { fetchStudentProfile } from "@/api/student";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Profile = () => {
   
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -34,26 +35,32 @@ const Profile = () => {
     
     // Check if user is authenticated
     const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+    const userId = localStorage.getItem("userId") || sessionStorage.getItem("userId") || "student-1"; // Default for demo
+    
     if (!userRole || userRole !== "student") {
       navigate("/login");
       return;
     }
     
-    // Get mock current user (in a real app, this would come from authentication)
-    // Here we're just using a student from our mock data
-    const student = mockUsers.find(u => u.role === "student");
-    if (student) {
-      setCurrentUser(student);
-      setFormData({
-        name: student.name,
-        email: student.email,
-        department: student.department || "",
-        session: student.session || "",
-        section: student.section || "",
-        profileImage: student.profileImage || "",
-      });
-    }
+    setUserId(userId);
   }, [navigate]);
+  
+  // Fetch student profile data
+  const { data: studentProfile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ["studentProfile", userId],
+    queryFn: () => fetchStudentProfile(userId as string),
+    enabled: !!userId,
+    onSuccess: (data) => {
+      setFormData({
+        name: data.name,
+        email: data.email,
+        department: data.department || "",
+        session: data.session || "",
+        section: data.section || "",
+        profileImage: data.profileImage || "",
+      });
+    },
+  });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,7 +72,7 @@ const Profile = () => {
     setLoading(true);
     
     try {
-      // In a real app, this would be an API call to update the user profile
+      // In a real app, this would be an API call to update the profile
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
@@ -84,6 +91,20 @@ const Profile = () => {
       setLoading(false);
     }
   };
+  
+  if (isProfileLoading) {
+    return (
+      <DashboardLayout
+        title="Your Profile"
+        description="View and manage your personal information"
+      >
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+          <span className="ml-2 text-white/70">Loading profile...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   return (
     <DashboardLayout
@@ -123,7 +144,7 @@ const Profile = () => {
               <h3 className="text-xl font-semibold text-white">{formData.name}</h3>
               <p className="text-sm text-white/70">{formData.email}</p>
               
-              {currentUser?.isClassRepresentative && (
+              {studentProfile?.isClassRepresentative && (
                 <div className="mt-2 rounded-full bg-blue-700/30 px-3 py-1 text-xs font-medium text-blue-400">
                   Class Representative
                 </div>

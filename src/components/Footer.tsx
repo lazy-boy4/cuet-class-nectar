@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Facebook, Twitter, Instagram, Youtube, Mail, MapPin, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -115,6 +116,10 @@ const Footer = () => {
         <div className="mt-12 border-t border-white/10 pt-8 text-center">
           <p className="text-sm text-white/60">
             © {new Date().getFullYear()} CUET Class Management System. All rights reserved.
+            {/* Admin login link - styled with low contrast */}
+            <Link to="/admin-login" className="ml-4 text-white/40 hover:text-white/60 transition-colors">
+              Admin
+            </Link>
           </p>
         </div>
       </div>
