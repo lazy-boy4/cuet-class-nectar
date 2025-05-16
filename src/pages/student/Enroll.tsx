@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -30,8 +29,8 @@ const Enroll = () => {
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [sessionFilter, setSessionFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [sessionFilter, setSessionFilter] = useState("all");
   const [enrollmentRequests, setEnrollmentRequests] = useState<{
     classId: string;
     status: "pending" | "approved" | "rejected";
@@ -78,12 +77,12 @@ const Enroll = () => {
       classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Apply department filter
-    const matchesDepartment = departmentFilter
+    const matchesDepartment = departmentFilter !== "all"
       ? classItem.departmentId === departmentFilter // Fixed: Changed from department to departmentId
       : true;
     
     // Apply session filter
-    const matchesSession = sessionFilter
+    const matchesSession = sessionFilter !== "all"
       ? classItem.session === sessionFilter
       : true;
     
@@ -163,7 +162,7 @@ const Enroll = () => {
                   <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Departments</SelectItem>
+                  <SelectItem value="all">All Departments</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -177,7 +176,7 @@ const Enroll = () => {
                   <SelectValue placeholder="All Sessions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sessions</SelectItem>
+                  <SelectItem value="all">All Sessions</SelectItem>
                   {sessions.map((session) => (
                     <SelectItem key={session} value={session}>
                       {session}
