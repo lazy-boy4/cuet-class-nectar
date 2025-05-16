@@ -54,6 +54,18 @@ const mockAssignments = [
   },
 ];
 
+const QuickAdminNav = () => (
+  <nav className="mb-8 flex flex-wrap gap-3">
+    <Link to="/admin/dashboard" className="btn-secondary">Dashboard</Link>
+    <Link to="/admin/departments" className="btn-secondary">Departments</Link>
+    <Link to="/admin/courses" className="btn-secondary">Courses</Link>
+    <Link to="/admin/classes" className="btn-secondary">Classes</Link>
+    <Link to="/admin/users" className="btn-secondary">Users</Link>
+    <Link to="/admin/assign-teachers" className="btn-secondary">Assign Teachers</Link>
+    <Link to="/admin/promote-crs" className="btn-secondary">Promote CRs</Link>
+  </nav>
+);
+
 const AssignTeachers = () => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -226,6 +238,7 @@ const getDepartmentName = (departmentCode: string): string => {
       title="Assign Teachers"
       description="Assign teachers to specific classes"
     >
+      <QuickAdminNav />
       {/* Search and Add Button */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="relative w-full max-w-xs">
