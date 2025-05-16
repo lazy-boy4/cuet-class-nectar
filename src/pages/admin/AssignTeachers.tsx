@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom"; // <-- Fix: Import Link
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Search, X } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
