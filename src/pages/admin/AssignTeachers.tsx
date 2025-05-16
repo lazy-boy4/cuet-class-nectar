@@ -73,7 +73,8 @@ const AssignTeachers = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
   const [classSearchTerm, setClassSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
+  // Change initial value to "all"
+  const [departmentFilter, setDepartmentFilter] = useState("all");
   
   // State for teacher-class assignments
   const [assignments, setAssignments] = useState(mockAssignments);
@@ -93,17 +94,18 @@ const AssignTeachers = () => {
   );
   
   // Filter classes based on search term and department filter
-const classes = mockClasses.filter((classItem) => {
-  const searchMatch =
-    classItem.courseCode.toLowerCase().includes(classSearchTerm.toLowerCase()) ||
-    classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
-    
-  const departmentMatch = departmentFilter
-    ? classItem.departmentCode === departmentFilter // Changed from departmentId to departmentCode
-    : true;
-    
-  return searchMatch && departmentMatch;
-});
+  const classes = mockClasses.filter((classItem) => {
+    const searchMatch =
+      classItem.courseCode.toLowerCase().includes(classSearchTerm.toLowerCase()) ||
+      classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
+
+    // If departmentFilter is "all", don't filter by department
+    const departmentMatch = departmentFilter !== "all"
+      ? (classItem.departmentCode === departmentFilter)
+      : true;
+      
+    return searchMatch && departmentMatch;
+  });
   
   // Handle opening the dialog for adding a new assignment
   const handleAddAssignment = () => {
@@ -392,7 +394,8 @@ const getDepartmentName = (departmentCode: string): string => {
                       <SelectValue placeholder="All Departments" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Departments</SelectItem>
+                      {/* Use "all" instead of "" */}
+                      <SelectItem value="all">All Departments</SelectItem>
                       {mockDepartments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
