@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Memory Bank (keep activeContext.md)
+/memory-bank/*
+!/memory-bank/activeContext.md
