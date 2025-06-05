@@ -1,8 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronRight, LogOut } from "lucide-react";
+import { Menu, X, ChevronRight, LogOut, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const { toast } = useToast();
@@ -11,6 +18,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{ name?: string; picture?: string } | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,9 +33,18 @@ const Header = () => {
     const checkUserAuth = () => {
       const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
       const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";
+      const storedProfile = localStorage.getItem("userProfile");
       
       setIsLoggedIn(storedLoginStatus);
       setUserRole(storedRole);
+      
+      if (storedProfile) {
+        try {
+          setUserProfile(JSON.parse(storedProfile));
+        } catch (error) {
+          console.error("Error parsing user profile:", error);
+        }
+      }
     };
 
     checkUserAuth();
@@ -39,10 +56,13 @@ const Header = () => {
     try {
       localStorage.removeItem("userRole");
       localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("userProfile");
       sessionStorage.removeItem("userRole");
       sessionStorage.removeItem("isLoggedIn");
+      sessionStorage.removeItem("userProfile");
       setIsLoggedIn(false);
       setUserRole(null);
+      setUserProfile(null);
       
       toast({
         title: "Logged out successfully",
@@ -75,6 +95,28 @@ const Header = () => {
     } else {
       navigate("/");
     }
+  };
+
+  const handleProfileClick = () => {
+    if (userRole === "student") {
+      navigate("/student/profile");
+    } else if (userRole === "teacher") {
+      navigate("/teacher/profile");
+    } else if (userRole === "admin") {
+      navigate("/admin/profile");
+    }
+  };
+
+  const getUserInitials = () => {
+    if (userProfile?.name) {
+      return userProfile.name
+        .split(" ")
+        .map(name => name.charAt(0))
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
   };
 
   return (
@@ -119,13 +161,29 @@ const Header = () => {
                   Dashboard
                 </Link>
               )}
-              <button
-                onClick={handleLogout}
-                className="btn-secondary flex items-center space-x-2"
-              >
-                <span>Log Out</span>
-                <LogOut size={16} />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-white/10 transition-colors">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={userProfile?.picture} alt={userProfile?.name || "Profile"} />
+                      <AvatarFallback className="bg-blue-600 text-white text-sm">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={handleProfileClick}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -202,13 +260,23 @@ const Header = () => {
               )}
               <button
                 onClick={() => {
+                  handleProfileClick();
+                  setIsMenuOpen(false);
+                }}
+                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white text-left"
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </button>
+              <button
+                onClick={() => {
                   handleLogout();
                   setIsMenuOpen(false);
                 }}
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white text-left"
               >
-                <span>Log Out</span>
                 <LogOut size={16} />
+                <span>Log Out</span>
               </button>
             </>
           ) : (
