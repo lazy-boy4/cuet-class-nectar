@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "react-router-dom";
@@ -46,10 +45,15 @@ export default function AssignTeachers() {
   }, []);
 
   const handleAssignment = (classId: string, teacherId: string) => {
-    setAssignments(prev => ({
-      ...prev,
-      [classId]: teacherId
-    }));
+    setAssignments(prev => {
+      const newAssignments = { ...prev };
+      if (teacherId === "none") {
+        delete newAssignments[classId];
+      } else {
+        newAssignments[classId] = teacherId;
+      }
+      return newAssignments;
+    });
   };
 
   const handleSaveAssignments = async () => {
@@ -184,14 +188,14 @@ export default function AssignTeachers() {
                   <div className="flex items-center space-x-4">
                     <div className="w-64">
                       <Select
-                        value={assignments[classItem.id] || ""}
+                        value={assignments[classItem.id] || "none"}
                         onValueChange={(value) => handleAssignment(classItem.id, value)}
                       >
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select teacher" />
                         </SelectTrigger>
                         <SelectContent className="bg-gray-800 border-white/10">
-                          <SelectItem value="" className="text-white">
+                          <SelectItem value="none" className="text-white">
                             No teacher assigned
                           </SelectItem>
                           {mockTeachers
