@@ -15,6 +15,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 
+// Public pages
+import About from "./pages/About";
+import Features from "./pages/Features";
+import Faculty from "./pages/Faculty";
+import Departments from "./pages/Departments";
+import Help from "./pages/Help";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import FAQ from "./pages/FAQ";
+import Support from "./pages/Support";
+
 // Admin routes
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import CourseManagement from "./pages/admin/CourseManagement";
@@ -60,6 +71,17 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/notices" element={<NoticeBoard />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            
+            {/* Public information pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/faculty" element={<Faculty />} />
+            <Route path="/departments" element={<Departments />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/support" element={<Support />} />
             
             {/* Student routes */}
             <Route path="/student/dashboard" element={<StudentDashboard />} />
