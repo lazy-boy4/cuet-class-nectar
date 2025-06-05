@@ -1,73 +1,53 @@
 # Active Context - CUET ClassNectar
 
 ## Current Focus
-**Initializing Project Infrastructure**
-- Memory bank structure created and populated with foundational documents
-- Repository configuration complete
-- Development environment prepared for feature implementation
+**Transitioning to Pocketbase Backend & Initial Setup**
+- Memory bank updated to reflect Pocketbase as the backend solution.
+- Preparing for Pocketbase installation and schema definition.
+- Revising frontend integration strategy for Pocketbase API/SDK.
 
 ## Immediate Priorities
-1. Authentication System Implementation
-   - Create auth context provider
-   - Implement JWT-based authentication scaffolding
-   - Prepare for role-based access control
-
-2. Core UI Component Development
-   - Begin implementing key UI components
-   - Establish component library patterns
-   - Ensure consistency with design system
-
-3. Development Workflow Setup
-   - Finalize TypeScript configuration
-   - Ensure proper linting and code formatting
-   - Prepare for component testing
+1.  **Pocketbase Setup & Configuration:**
+    *   Install Pocketbase locally.
+    *   Define collections (schema) for users, departments, courses, classes, notices based on `projectbrief.md`.
+    *   Configure access rules and permissions for collections.
+2.  **Frontend Integration with Pocketbase:**
+    *   Install Pocketbase JavaScript SDK in the frontend project (`npm install pocketbase`).
+    *   Create a Pocketbase service wrapper in `src/lib/pocketbase.ts` or `src/api/pocketbase.ts` to initialize and manage the SDK client.
+    *   Update authentication flow (AuthContext, signup/login pages) to use Pocketbase authentication.
+3.  **Core UI Component Development (Continued):**
+    *   Continue implementing key UI components with ShadCN.
+    *   Ensure components are adaptable for data from Pocketbase.
 
 ## Current Constraints
-- **Authentication:** No actual authentication mechanism implemented yet (current implementation uses mock data)
-- **API Integration:** All data is currently mocked (no real backend connection)
-- **State Management:** Basic structure in place, will evolve as features are added
-- **UI Components:** Minimal implementation, will expand as needed
+- **Backend Shift:** Development on the Golang backend is halted; focus is now on Pocketbase.
+- **API Integration:** No real backend connection yet; will be established with Pocketbase.
+- **State Management:** Existing frontend state management will need to be adapted for Pocketbase auth state.
 
 ## Technical Considerations
-1. The project is currently in initialization phase
-2. No real user data is being handled
-3. All API calls are mocked
-4. Security considerations will be implemented in next phase
+1.  Project is adapting to a new backend (Pocketbase).
+2.  All data persistence and business logic will be handled by Pocketbase.
+3.  Frontend will interact with Pocketbase using its JS SDK.
 
 ## Key Decisions
-1. Using React with TypeScript as frontend framework
-2. Vite as build tool
-3. Tailwind CSS for styling
-4. ShadCN/UI-inspired component library pattern
-5. Role-based access control as core security pattern
+1.  **Backend Technology Shift:** Pocketbase adopted for backend, database, and authentication.
+2.  Frontend stack (React, TypeScript, Vite, ShadCN) remains unchanged.
+3.  Initial focus on setting up Pocketbase and integrating authentication.
 
 ## Pending Implementation Tasks
-1. Set up auth context and state management
-2. Implement login system UI
-3. Create reusable UI components
-4. Begin integrating mock data with components
+1.  Install Pocketbase and run the server.
+2.  Define all required collections in Pocketbase Admin UI.
+3.  Set up Pocketbase JS SDK in the frontend.
+4.  Implement user registration and login pages using Pocketbase.
 
 ## Risk Assessment
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Incomplete technical foundation | Medium | Regular progress reviews, documentation updates |
-| Misalignment with user needs | Medium | Close collaboration with stakeholders, iterative development |
-| Technical debt accumulation | Medium | Continuous code quality checks, periodic refactoring |
-| Security vulnerabilities | Low (currently in dev) | Planned security implementation in next phase |
+| Risk                                      | Impact | Mitigation                                                                 |
+|-------------------------------------------|--------|----------------------------------------------------------------------------|
+| Learning curve for Pocketbase             | Low-Med| Utilize official documentation, community resources.                       |
+| Limitations of Pocketbase for complex logic | Medium | Evaluate as features are built; consider extending with Go if necessary (later). |
+| Data migration if switching from Pocketbase | Medium | Plan for data export/import if a future switch to Supabase occurs.         |
 
 ## Decision Log
-**Date:** 2025-05-23  
-**Decision:** Use ShadCN/UI-inspired component library pattern  
-**Rationale:**  
-- Provides clear component organization
-- Easy to maintain and extend
-- Billed as a headless implementation, allowing flexibility
-- Follows established design system patterns
-
-**Date:** 2025-05-23  
-**Decision:** Start with client-side authentication pattern  
-**Rationale:**  
-- Allows implementation of role-based UI patterns
-- Prepares for eventual real authentication
-- Facilitates testing and development
-- Can be enhanced with real JWT implementation later
+**Date:** (Today's Date)  
+**Decision:** Switch backend from Golang/Supabase to Pocketbase.  
+**Rationale:** User directive for a potentially simpler/faster initial setup for backend, auth, and database, with the option to change later.
