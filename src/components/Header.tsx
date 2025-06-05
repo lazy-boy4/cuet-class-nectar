@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronRight, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Header = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -56,6 +57,26 @@ const Header = () => {
     }
   };
 
+  const handleLogoClick = () => {
+    if (isLoggedIn && userRole) {
+      switch (userRole) {
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        case "teacher":
+          navigate("/teacher/dashboard");
+          break;
+        case "student":
+          navigate("/student/dashboard");
+          break;
+        default:
+          navigate("/");
+      }
+    } else {
+      navigate("/");
+    }
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
@@ -66,18 +87,18 @@ const Header = () => {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center space-x-2">
-          <Link to="/">
+          <button onClick={handleLogoClick} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <img
-              src="/lovable-uploads/3fcc6e15-16d0-4bdb-8051-bd5314406f6c.png"
+              src="/static/cuet logo.png"
               alt="CUET Logo"
               className="h-10 w-auto"
             />
-          </Link>
-          <div className="hidden sm:block">
-            <h1 className="text-lg font-bold text-white">
-              CUET Class Management
-            </h1>
-          </div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold text-white">
+                CUET Class Management
+              </h1>
+            </div>
+          </button>
         </div>
 
         <nav className="hidden items-center space-x-8 md:flex">

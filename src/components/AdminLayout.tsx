@@ -74,6 +74,10 @@ const AdminLayout = ({
     navigate("/");
   };
 
+  const handleLogoClick = () => {
+    navigate("/admin/dashboard");
+  };
+
   return (
     <div className="flex min-h-screen bg-cuet-navy">
       {/* Sidebar for desktop */}
@@ -83,14 +87,14 @@ const AdminLayout = ({
         }`}
       >
         <div className="flex h-16 items-center justify-between border-b border-white/10 px-6">
-          <div className="flex items-center space-x-2">
+          <button onClick={handleLogoClick} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <img
-              src="/lovable-uploads/3fcc6e15-16d0-4bdb-8051-bd5314406f6c.png"
+              src="/static/cuet logo.png"
               alt="CUET Logo"
               className="h-8 w-auto"
             />
             <span className="text-lg font-bold text-white">CUET Admin</span>
-          </div>
+          </button>
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="block lg:hidden"
