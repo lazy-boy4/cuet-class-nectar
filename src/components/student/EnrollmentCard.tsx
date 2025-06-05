@@ -9,8 +9,8 @@ import { Clock, Users, BookOpen } from "lucide-react";
 interface EnrollmentCardProps {
   classData: {
     id: string;
-    courseCode: string;
-    courseName: string;
+    courseCode?: string;
+    courseName?: string;
     section: string;
     session: string;
     departmentCode: string;
@@ -111,7 +111,7 @@ const EnrollmentCard = ({ classData, isEnrolled, enrollmentStatus, onEnroll }: E
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg text-white">
-              {classData.courseCode}: {classData.courseName}
+              {classData.courseCode || 'N/A'}: {classData.courseName || 'Unnamed Course'}
             </CardTitle>
             <CardDescription>
               Section {classData.section} • {classData.session}
