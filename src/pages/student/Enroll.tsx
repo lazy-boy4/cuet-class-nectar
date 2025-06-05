@@ -1,350 +1,165 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Plus, Search, X } from "lucide-react";
+
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Search, Filter } from "lucide-react";
+import EnrollmentCard from "@/components/student/EnrollmentCard";
 import { mockClasses } from "@/api/mockData/classes";
 import { mockDepartments } from "@/api/mockData/departments";
-import { Class } from "@/types";
+import { mockUsers } from "@/api/mockData/users";
+import { fetchEnrollments } from "@/api";
 
 const Enroll = () => {
-  const { toast } = useToast();
-  
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [sessionFilter, setSessionFilter] = useState("all");
-  const [enrollmentRequests, setEnrollmentRequests] = useState<{
-    classId: string;
-    status: "pending" | "approved" | "rejected";
-    requestedAt: Date;
-  }[]>([
-    {
-      classId: "class-101",
-      status: "approved",
-      requestedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-    },
-    {
-      classId: "class-102",
-      status: "pending",
-      requestedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      classId: "class-103",
-      status: "rejected",
-      requestedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-    },
-  ]);
-  
-  // Get all departments from the mock data
-  const departments = mockDepartments;
-  
-  // Get unique session values from classes
-  const sessions = Array.from(
-    new Set(mockClasses.map((classItem) => classItem.session))
-  );
-  
-  // Filter classes based on search term and filters
-  const filteredClasses = mockClasses.filter((classItem) => {
-    // Check if class is already in enrollment requests
-    const isAlreadyRequested = enrollmentRequests.some(
-      (req) => req.classId === classItem.id
-    );
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [sessionFilter, setSessionFilter] = useState<string>("all");
+
+  useEffect(() => {
+    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+    if (!userRole || userRole !== "student") {
+      navigate("/login");
+      return;
+    }
     
-    // Skip if already requested
-    if (isAlreadyRequested) return false;
+    const student = mockUsers.find(u => u.role === "student");
+    if (student) {
+      setCurrentUser(student);
+    }
+  }, [navigate]);
+
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["studentEnrollments", currentUser?.id],
+    queryFn: () => fetchEnrollments(currentUser?.id),
+    enabled: !!currentUser,
+  });
+
+  // Filter available classes
+  const filteredClasses = mockClasses.filter(cls => {
+    const matchesSearch = 
+      cls.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cls.courseName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Apply search filter
-    const matchesSearch =
-      classItem.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      classItem.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Apply department filter
-    const matchesDepartment = departmentFilter !== "all"
-      ? classItem.departmentId === departmentFilter // Fixed: Changed from department to departmentId
-      : true;
-    
-    // Apply session filter
-    const matchesSession = sessionFilter !== "all"
-      ? classItem.session === sessionFilter
-      : true;
+    const matchesDepartment = departmentFilter === "all" || cls.departmentCode === departmentFilter;
+    const matchesSession = sessionFilter === "all" || cls.session === sessionFilter;
     
     return matchesSearch && matchesDepartment && matchesSession;
   });
-  
-  // Handle enrollment request
-  const handleEnrollmentRequest = (classId: string) => {
-    // In a real app, this would make an API call
-    
-    // Add to enrollment requests
-    setEnrollmentRequests([
-      ...enrollmentRequests,
-      {
-        classId,
-        status: "pending",
-        requestedAt: new Date(),
-      },
-    ]);
-    
-    // Show success toast
-    toast({
-      title: "Enrollment Requested",
-      description: "Your enrollment request has been submitted successfully.",
-    });
+
+  // Get unique sessions
+  const sessions = Array.from(new Set(mockClasses.map(cls => cls.session))).sort();
+
+  const handleEnroll = (classId: string) => {
+    // Mock enrollment logic
+    console.log("Enrolling in class:", classId);
   };
-  
-  // Function to get class details by ID
-  const getClassById = (id: string): Class | undefined => {
-    return mockClasses.find((c) => c.id === id);
+
+  const getEnrollmentStatus = (classId: string) => {
+    const enrollment = enrollments.find(e => e.classId === classId);
+    return enrollment?.status;
   };
-  
-  // Function to get department name from ID
-  const getDepartmentName = (departmentId: string): string => {
-    const department = departments.find((d) => d.id === departmentId);
-    return department ? department.name : departmentId;
+
+  const isEnrolled = (classId: string) => {
+    return enrollments.some(e => e.classId === classId && e.status === "approved");
   };
-  
-  // Calculate time difference for showing "requested X days ago"
-  const getTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (diffInDays === 0) return "today";
-    if (diffInDays === 1) return "yesterday";
-    return `${diffInDays} days ago`;
-  };
-  
+
   return (
     <DashboardLayout
       title="Enroll in Classes"
-      description="Browse available classes and submit enrollment requests"
+      description="Browse and enroll in available classes"
     >
-      <div className="space-y-8">
-        {/* Available Classes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Classes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Search and Filters */}
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="flex items-center space-x-2">
-                <Search className="h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search classes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full max-w-xs border-white/10"
-                />
-              </div>
-              
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[180px] border-white/10">
-                  <SelectValue placeholder="All Departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={sessionFilter} onValueChange={setSessionFilter}>
-                <SelectTrigger className="w-[150px] border-white/10">
-                  <SelectValue placeholder="All Sessions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sessions</SelectItem>
-                  {sessions.map((session) => (
-                    <SelectItem key={session} value={session}>
-                      {session}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="space-y-6">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              placeholder="Search by course code or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/5 border-white/10 text-white"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[200px] bg-white/5 border-white/10">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-white/10">
+                <SelectItem value="all" className="text-white">All Departments</SelectItem>
+                {mockDepartments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.code} className="text-white">
+                    {dept.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            {/* Classes Table */}
-            <div className="overflow-hidden rounded-md border border-white/10">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Session</TableHead>
-                    <TableHead>Section</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClasses.length > 0 ? (
-                    filteredClasses.map((classItem) => (
-                      <TableRow key={classItem.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-white">
-                              {classItem.courseName}
-                            </div>
-                            <div className="text-sm text-white/60">
-                              {classItem.courseCode}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getDepartmentName(classItem.departmentId)}</TableCell> {/* Fixed: Changed from department to departmentId */}
-                        <TableCell>{classItem.session}</TableCell>
-                        <TableCell>{classItem.section}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleEnrollmentRequest(classItem.id)}
-                          >
-                            <Plus className="mr-1 h-4 w-4" /> Request Enrollment
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        <div className="text-white/60">
-                          No matching classes found. Try adjusting your filters.
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Enrollment Requests */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Enrollment Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {enrollmentRequests.length > 0 ? (
-              <div className="overflow-hidden rounded-md border border-white/10">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Requested</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {enrollmentRequests.map((request) => {
-                      const classItem = getClassById(request.classId);
-                      if (!classItem) return null;
-                      
-                      return (
-                        <TableRow key={request.classId}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium text-white">
-                                {classItem.courseName}
-                              </div>
-                              <div className="text-sm text-white/60">
-                                {classItem.courseCode}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{getDepartmentName(classItem.departmentId)}</TableCell> {/* Fixed: Changed from department to departmentId */}
-                          <TableCell>
-                            <span className="text-sm text-white/60">
-                              {getTimeAgo(request.requestedAt)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {request.status === "approved" ? (
-                              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">
-                                <Check className="mr-1 h-3 w-3" />
-                                Approved
-                              </span>
-                            ) : request.status === "rejected" ? (
-                              <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
-                                <X className="mr-1 h-3 w-3" />
-                                Rejected
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-800">
-                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                Pending
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {request.status === "approved" ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                asChild
-                              >
-                                <Link to={`/student/classes/${request.classId}`}>
-                                  View Class
-                                </Link>
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const newRequests = enrollmentRequests.filter(
-                                    (req) => req.classId !== request.classId
-                                  );
-                                  setEnrollmentRequests(newRequests);
-                                  
-                                  toast({
-                                    title: "Request Cancelled",
-                                    description: "Your enrollment request has been cancelled.",
-                                  });
-                                }}
-                              >
-                                Cancel Request
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="flex h-24 flex-col items-center justify-center rounded-md border border-dashed border-white/10 p-8 text-center">
-                <p className="text-white/60">
-                  You haven't requested enrollment in any classes yet.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <Select value={sessionFilter} onValueChange={setSessionFilter}>
+              <SelectTrigger className="w-[150px] bg-white/5 border-white/10">
+                <SelectValue placeholder="Session" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-white/10">
+                <SelectItem value="all" className="text-white">All Sessions</SelectItem>
+                {sessions.map((session) => (
+                  <SelectItem key={session} value={session} className="text-white">
+                    {session}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-white">Available Classes</h2>
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-400">
+              {filteredClasses.length} classes
+            </Badge>
+          </div>
+          
+          {(searchTerm || departmentFilter !== "all" || sessionFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setDepartmentFilter("all");
+                setSessionFilter("all");
+              }}
+              className="text-sm text-blue-400 hover:text-blue-300"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Classes Grid */}
+        {filteredClasses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Filter className="h-12 w-12 text-white/30 mb-4" />
+            <p className="text-lg text-white/70 mb-2">No classes found</p>
+            <p className="text-sm text-white/50">Try adjusting your search criteria</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClasses.map((cls) => (
+              <EnrollmentCard
+                key={cls.id}
+                classData={cls}
+                isEnrolled={isEnrolled(cls.id)}
+                enrollmentStatus={getEnrollmentStatus(cls.id)}
+                onEnroll={handleEnroll}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

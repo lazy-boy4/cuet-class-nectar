@@ -1,90 +1,66 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Camera, Save, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { fetchStudentProfile } from "@/api/student";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/hooks/use-toast";
+import DashboardLayout from "@/components/DashboardLayout";
+import { User, Mail, GraduationCap, Building, Camera } from "lucide-react";
+import { mockUsers } from "@/api/mockData/users";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  
-  // Form state
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     department: "",
     session: "",
     section: "",
-    profileImage: "",
   });
-  
+
   useEffect(() => {
-    document.title = "Student Profile - CUET Class Management System";
-    
-    // Check if user is authenticated
     const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    const userId = localStorage.getItem("userId") || sessionStorage.getItem("userId") || "student-1"; // Default for demo
-    
     if (!userRole || userRole !== "student") {
       navigate("/login");
       return;
     }
     
-    setUserId(userId);
-  }, [navigate]);
-  
-  // Fetch student profile data
-  const { data: studentProfile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["studentProfile", userId],
-    queryFn: () => fetchStudentProfile(userId as string),
-    enabled: !!userId,
-  });
-  
-  // Update form data when profile is loaded
-  useEffect(() => {
-    if (studentProfile) {
+    const student = mockUsers.find(u => u.role === "student");
+    if (student) {
+      setCurrentUser(student);
       setFormData({
-        name: studentProfile.name,
-        email: studentProfile.email,
-        department: studentProfile.department || "",
-        session: studentProfile.session || "",
-        section: studentProfile.section || "",
-        profileImage: studentProfile.profileImage || "",
+        name: student.name,
+        email: student.email,
+        department: student.department || "",
+        session: student.session || "",
+        section: student.section || "",
       });
     }
-  }, [studentProfile]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
+  }, [navigate]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
+    setIsLoading(true);
+
     try {
-      // In a real app, this would be an API call to update the profile
+      // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update current user
+      setCurrentUser({ ...currentUser, ...formData });
+      setIsEditing(false);
       
       toast({
         title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
+        description: "Your profile has been updated successfully.",
       });
-      
-      setIsEditing(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -92,189 +68,206 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-  
-  if (isProfileLoading) {
-    return (
-      <DashboardLayout
-        title="Your Profile"
-        description="View and manage your personal information"
-      >
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-          <span className="ml-2 text-white/70">Loading profile...</span>
-        </div>
-      </DashboardLayout>
-    );
+
+  const handleCancel = () => {
+    setFormData({
+      name: currentUser?.name || "",
+      email: currentUser?.email || "",
+      department: currentUser?.department || "",
+      session: currentUser?.session || "",
+      section: currentUser?.section || "",
+    });
+    setIsEditing(false);
+  };
+
+  if (!currentUser) {
+    return <DashboardLayout title="Profile" description=""><div>Loading...</div></DashboardLayout>;
   }
-  
+
   return (
     <DashboardLayout
-      title="Your Profile"
-      description="View and manage your personal information"
+      title="Student Profile"
+      description="View and manage your profile information"
     >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Left column - Profile picture */}
-        <div className="col-span-1">
-          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-            <CardContent className="flex flex-col items-center justify-center p-6">
-              <div className="relative mb-4">
-                {formData.profileImage ? (
-                  <img
-                    src={formData.profileImage}
-                    alt="Profile"
-                    className="h-32 w-32 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gray-800 text-white">
-                    <User size={64} />
-                  </div>
-                )}
-                
-                {isEditing && (
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute bottom-0 right-0 rounded-full"
-                    disabled={loading}
-                  >
-                    <Camera size={16} />
-                  </Button>
-                )}
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Profile Header */}
+        <Card className="border-white/10 bg-white/5">
+          <CardHeader className="text-center">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative">
+                <Avatar className="w-24 h-24">
+                  <AvatarImage src={currentUser.profileImage} alt={currentUser.name} />
+                  <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-2xl">
+                    {currentUser.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
               </div>
               
-              <h3 className="text-xl font-semibold text-white">{formData.name}</h3>
-              <p className="text-sm text-white/70">{formData.email}</p>
-              
-              {studentProfile?.isClassRepresentative && (
-                <div className="mt-2 rounded-full bg-blue-700/30 px-3 py-1 text-xs font-medium text-blue-400">
-                  Class Representative
+              <div>
+                <CardTitle className="text-white text-xl">{currentUser.name}</CardTitle>
+                <CardDescription className="text-white/70">{currentUser.email}</CardDescription>
+                {currentUser.isClassRepresentative && (
+                  <Badge variant="outline" className="mt-2 bg-purple-500/10 text-purple-400">
+                    Class Representative
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Profile Information */}
+        <Card className="border-white/10 bg-white/5">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-white">Profile Information</CardTitle>
+              <CardDescription>Manage your personal information</CardDescription>
+            </div>
+            {!isEditing && (
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditing(true)}
+              >
+                Edit Profile
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isEditing ? (
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                    required
+                  />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Right column - Profile details */}
-        <div className="col-span-1 md:col-span-2">
-          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-white">Personal Information</CardTitle>
-              {!isEditing ? (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit Profile
-                </Button>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setIsEditing(false);
-                    // Reset form data to original values if profile exists
-                    if (studentProfile) {
-                      setFormData({
-                        name: studentProfile.name,
-                        email: studentProfile.email,
-                        department: studentProfile.department || "",
-                        session: studentProfile.session || "",
-                        section: studentProfile.section || "",
-                        profileImage: studentProfile.profileImage || "",
-                      });
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      disabled={!isEditing || loading}
-                      className="bg-white/5 border-white/10"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      disabled={true} // Email cannot be changed
-                      className="bg-white/5 border-white/10"
-                    />
-                  </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                    required
+                  />
                 </div>
-                
-                <Separator className="my-4 bg-white/10" />
-                
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                <div className="space-y-2">
+                  <Label htmlFor="department" className="text-white">Department</Label>
+                  <Input
+                    id="department"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    className="bg-white/5 border-white/10 text-white"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      name="department"
-                      value={formData.department}
-                      disabled={true} // Department cannot be changed by student
-                      className="bg-white/5 border-white/10"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="session">Session</Label>
+                    <Label htmlFor="session" className="text-white">Session</Label>
                     <Input
                       id="session"
-                      name="session"
                       value={formData.session}
-                      disabled={true} // Session cannot be changed by student
-                      className="bg-white/5 border-white/10"
+                      onChange={(e) => setFormData({ ...formData, session: e.target.value })}
+                      placeholder="2023-24"
+                      className="bg-white/5 border-white/10 text-white"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="section">Section</Label>
+                    <Label htmlFor="section" className="text-white">Section</Label>
                     <Input
                       id="section"
-                      name="section"
                       value={formData.section}
-                      disabled={true} // Section cannot be changed by student
-                      className="bg-white/5 border-white/10"
+                      onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                      placeholder="A, B, C..."
+                      className="bg-white/5 border-white/10 text-white"
                     />
                   </div>
                 </div>
-                
-                {isEditing && (
-                  <div className="mt-6 flex justify-end">
-                    <Button 
-                      type="submit" 
-                      className="bg-gradient-to-r from-blue-600 to-blue-800" 
-                      disabled={loading}
-                    >
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </Button>
-                  </div>
-                )}
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </form>
-            </CardContent>
-          </Card>
-        </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                  <User className="h-5 w-5 text-blue-400" />
+                  <div>
+                    <p className="text-sm text-white/70">Full Name</p>
+                    <p className="text-white">{currentUser.name}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                  <Mail className="h-5 w-5 text-green-400" />
+                  <div>
+                    <p className="text-sm text-white/70">Email Address</p>
+                    <p className="text-white">{currentUser.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                  <Building className="h-5 w-5 text-purple-400" />
+                  <div>
+                    <p className="text-sm text-white/70">Department</p>
+                    <p className="text-white">{currentUser.department || "Not specified"}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                    <GraduationCap className="h-5 w-5 text-orange-400" />
+                    <div>
+                      <p className="text-sm text-white/70">Session</p>
+                      <p className="text-white">{currentUser.session || "Not specified"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                    <User className="h-5 w-5 text-pink-400" />
+                    <div>
+                      <p className="text-sm text-white/70">Section</p>
+                      <p className="text-white">{currentUser.section || "Not specified"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
