@@ -1,21 +1,14 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
-
 const Footer = () => {
-  return (
-    <footer className="bg-cuet-navy py-16">
+  return <footer className="bg-cuet-navy py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Logo and Description */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center space-x-3">
-              <img
-                src="/lovable-uploads/3fcc6e15-16d0-4bdb-8051-bd5314406f6c.png"
-                alt="CUET Logo"
-                className="h-12 w-auto"
-              />
+              <img alt="CUET Logo" className="h-12 w-auto" src="/static/cuet logo.png" />
               <span className="text-xl font-semibold text-white">CUET CMS</span>
             </Link>
             <p className="text-gray-400">
@@ -118,8 +111,6 @@ const Footer = () => {
           </p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
