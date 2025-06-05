@@ -40,7 +40,7 @@ const UserForm = ({
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: userType as "student" | "teacher",
+    role: userType,
     department: "",
     session: "",
     section: "",
@@ -53,7 +53,7 @@ const UserForm = ({
       setFormData({
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: userType, // Use userType instead of user.role to ensure consistency
         department: user.department || "",
         session: user.session || "",
         section: user.section || "",

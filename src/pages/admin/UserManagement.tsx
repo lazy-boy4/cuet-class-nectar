@@ -77,7 +77,9 @@ export default function UserManagement() {
   };
 
   const openEditForm = (user: User) => {
-    setCurrentUserType(user.role);
+    // Only allow editing students and teachers, filter out admin role
+    const userType = user.role === "student" ? "student" : "teacher";
+    setCurrentUserType(userType);
     setEditUser(user);
     setOpenForm(true);
   };

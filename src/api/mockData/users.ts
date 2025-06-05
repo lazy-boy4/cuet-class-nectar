@@ -84,3 +84,7 @@ export const mockUsers: User[] = [
     department: "02 - Electrical and Electronic Engineering",
   },
 ];
+
+// Export filtered arrays for components that need them
+export const mockStudents = mockUsers.filter(user => user.role === "student");
+export const mockTeachers = mockUsers.filter(user => user.role === "teacher");
