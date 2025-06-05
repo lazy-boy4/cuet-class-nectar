@@ -10,6 +10,7 @@ const QuickAdminNav = () => (
     <Link to="/admin/courses" className="btn-secondary">Courses</Link>
     <Link to="/admin/classes" className="btn-secondary">Classes</Link>
     <Link to="/admin/users" className="btn-secondary">Users</Link>
+    <Link to="/admin/bulk-upload" className="btn-secondary">Bulk Upload</Link>
     <Link to="/admin/assign-teachers" className="btn-secondary">Assign Teachers</Link>
     <Link to="/admin/promote-crs" className="btn-secondary">Promote CRs</Link>
   </nav>

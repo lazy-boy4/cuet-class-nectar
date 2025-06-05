@@ -13,16 +13,17 @@ import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/AdminLogin"; // New import for admin login
+import AdminLogin from "./pages/AdminLogin";
 
 // Admin routes
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import CourseManagement from "./pages/admin/CourseManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
 import UserManagement from "./pages/admin/UserManagement";
+import BulkUpload from "./pages/admin/BulkUpload";
 import AssignTeachers from "./pages/admin/AssignTeachers";
 import PromoteCRs from "./pages/admin/PromoteCRs";
-import AdminDashboardPage from "./pages/admin/AdminDashboard"; // New import for admin dashboard page
+import AdminDashboardPage from "./pages/admin/AdminDashboard";
 
 // Teacher routes
 import TeacherClassManagement from "./pages/teacher/ClassManagement";
@@ -58,7 +59,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/notices" element={<NoticeBoard />} />
-            <Route path="/admin-login" element={<AdminLogin />} /> {/* New route for admin login */}
+            <Route path="/admin-login" element={<AdminLogin />} />
             
             {/* Student routes */}
             <Route path="/student/dashboard" element={<StudentDashboard />} />
@@ -70,12 +71,13 @@ function App() {
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher/classes/:classId" element={<TeacherClassManagement />} />
             
-            {/* Admin routes - Updated paths */}
+            {/* Admin routes */}
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/admin/departments" element={<DepartmentManagement />} />
             <Route path="/admin/courses" element={<CourseManagement />} />
             <Route path="/admin/classes" element={<ClassManagement />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/bulk-upload" element={<BulkUpload />} />
             <Route path="/admin/assign-teachers" element={<AssignTeachers />} />
             <Route path="/admin/promote-crs" element={<PromoteCRs />} />
             

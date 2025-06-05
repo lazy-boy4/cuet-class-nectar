@@ -1,53 +1,36 @@
-# Active Context - CUET ClassNectar
 
-## Current Focus
-**Transitioning to Pocketbase Backend & Initial Setup**
-- Memory bank updated to reflect Pocketbase as the backend solution.
-- Preparing for Pocketbase installation and schema definition.
-- Revising frontend integration strategy for Pocketbase API/SDK.
+# Current Development Context
 
-## Immediate Priorities
-1.  **Pocketbase Setup & Configuration:**
-    *   Install Pocketbase locally.
-    *   Define collections (schema) for users, departments, courses, classes, notices based on `projectbrief.md`.
-    *   Configure access rules and permissions for collections.
-2.  **Frontend Integration with Pocketbase:**
-    *   Install Pocketbase JavaScript SDK in the frontend project (`npm install pocketbase`).
-    *   Create a Pocketbase service wrapper in `src/lib/pocketbase.ts` or `src/api/pocketbase.ts` to initialize and manage the SDK client.
-    *   Update authentication flow (AuthContext, signup/login pages) to use Pocketbase authentication.
-3.  **Core UI Component Development (Continued):**
-    *   Continue implementing key UI components with ShadCN.
-    *   Ensure components are adaptable for data from Pocketbase.
+## Status: Building Complete Frontend
+Currently implementing all remaining admin, teacher, and student features with proper CRUD operations and role-based access.
 
-## Current Constraints
-- **Backend Shift:** Development on the Golang backend is halted; focus is now on Pocketbase.
-- **API Integration:** No real backend connection yet; will be established with Pocketbase.
-- **State Management:** Existing frontend state management will need to be adapted for Pocketbase auth state.
+## Recently Completed
+- ✅ Department Management (full CRUD with Supabase integration)
+- ✅ Course Management (basic structure with mock data)
+- ✅ Project structure and routing setup
+- ✅ Supabase connection established
 
-## Technical Considerations
-1.  Project is adapting to a new backend (Pocketbase).
-2.  All data persistence and business logic will be handled by Pocketbase.
-3.  Frontend will interact with Pocketbase using its JS SDK.
+## Currently Working On
+- Complete admin dashboard with real statistics
+- Class management with full CRUD operations
+- User management for students and teachers
+- Teacher dashboard and class management features
+- Student dashboard with attendance tracking
+- Bulk upload functionality
+- CR promotion system
 
-## Key Decisions
-1.  **Backend Technology Shift:** Pocketbase adopted for backend, database, and authentication.
-2.  Frontend stack (React, TypeScript, Vite, ShadCN) remains unchanged.
-3.  Initial focus on setting up Pocketbase and integrating authentication.
+## Next Steps
+1. Implement all admin management features
+2. Build teacher dashboard and class management
+3. Create student dashboard with charts and enrollment
+4. Add notice board system
+5. Implement attendance tracking
+6. Add bulk upload functionality
+7. Complete CR-specific features
 
-## Pending Implementation Tasks
-1.  Install Pocketbase and run the server.
-2.  Define all required collections in Pocketbase Admin UI.
-3.  Set up Pocketbase JS SDK in the frontend.
-4.  Implement user registration and login pages using Pocketbase.
-
-## Risk Assessment
-| Risk                                      | Impact | Mitigation                                                                 |
-|-------------------------------------------|--------|----------------------------------------------------------------------------|
-| Learning curve for Pocketbase             | Low-Med| Utilize official documentation, community resources.                       |
-| Limitations of Pocketbase for complex logic | Medium | Evaluate as features are built; consider extending with Go if necessary (later). |
-| Data migration if switching from Pocketbase | Medium | Plan for data export/import if a future switch to Supabase occurs.         |
-
-## Decision Log
-**Date:** (Today's Date)  
-**Decision:** Switch backend from Golang/Supabase to Pocketbase.  
-**Rationale:** User directive for a potentially simpler/faster initial setup for backend, auth, and database, with the option to change later.
+## Technical Decisions
+- Using Supabase for real-time data (tables: departments, courses, profiles, announcements, attendance, enrollments)
+- ShadCN components for consistent UI
+- React Query for efficient data fetching
+- Role-based routing with protected routes
+- Dark theme with CUET branding colors

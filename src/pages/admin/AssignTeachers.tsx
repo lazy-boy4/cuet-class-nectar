@@ -1,349 +1,222 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom"; // <-- Fix: Import Link
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Search, X } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { mockClasses } from "@/api/mockData/classes";
-import { mockUsers } from "@/api/mockData/users";
-import { mockDepartments } from "@/api/mockData/departments";
-import { Class, User } from "@/types";
 
-// Mock assignments - in a real app, this would come from an API
-const mockAssignments = [{
-  id: "assign-1",
-  teacherId: "user-105",
-  classId: "class-101",
-  assignedAt: new Date(2023, 5, 10)
-}, {
-  id: "assign-2",
-  teacherId: "user-106",
-  classId: "class-102",
-  assignedAt: new Date(2023, 5, 12)
-}, {
-  id: "assign-3",
-  teacherId: "user-107",
-  classId: "class-103",
-  assignedAt: new Date(2023, 5, 15)
-}];
-const QuickAdminNav = () => <nav className="mb-8 flex flex-wrap gap-3">
+import React, { useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Link } from "react-router-dom";
+import { Save, Users, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { mockClasses } from "@/api/mockData/classes";
+import { mockTeachers } from "@/api/mockData/users";
+import { toast } from "@/hooks/use-toast";
+
+const QuickAdminNav = () => (
+  <nav className="mb-8 flex flex-wrap gap-3">
     <Link to="/admin/dashboard" className="btn-secondary">Dashboard</Link>
     <Link to="/admin/departments" className="btn-secondary">Departments</Link>
     <Link to="/admin/courses" className="btn-secondary">Courses</Link>
     <Link to="/admin/classes" className="btn-secondary">Classes</Link>
     <Link to="/admin/users" className="btn-secondary">Users</Link>
+    <Link to="/admin/bulk-upload" className="btn-secondary">Bulk Upload</Link>
     <Link to="/admin/assign-teachers" className="btn-secondary">Assign Teachers</Link>
     <Link to="/admin/promote-crs" className="btn-secondary">Promote CRs</Link>
-  </nav>;
-const AssignTeachers = () => {
-  const {
-    toast
-  } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teacherSearchTerm, setTeacherSearchTerm] = useState("");
-  const [classSearchTerm, setClassSearchTerm] = useState("");
-  // Change initial value to "all"
-  const [departmentFilter, setDepartmentFilter] = useState("all");
+  </nav>
+);
 
-  // State for teacher-class assignments
-  const [assignments, setAssignments] = useState(mockAssignments);
+export default function AssignTeachers() {
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
-  // Form state for new assignment
-  const [formData, setFormData] = useState({
-    teacherId: "",
-    classId: ""
-  });
-
-  // Filter teachers based on search term and role
-  const teachers = mockUsers.filter(user => user.role === "teacher" && (user.name.toLowerCase().includes(teacherSearchTerm.toLowerCase()) || user.email.toLowerCase().includes(teacherSearchTerm.toLowerCase())));
-
-  // Filter classes based on search term and department filter
-  const classes = mockClasses.filter(classItem => {
-    const searchMatch = classItem.courseCode.toLowerCase().includes(classSearchTerm.toLowerCase()) || classItem.courseName.toLowerCase().includes(classSearchTerm.toLowerCase());
-
-    // If departmentFilter is "all", don't filter by department
-    const departmentMatch = departmentFilter !== "all" ? classItem.departmentCode === departmentFilter : true;
-    return searchMatch && departmentMatch;
-  });
-
-  // Handle opening the dialog for adding a new assignment
-  const handleAddAssignment = () => {
-    setFormData({
-      teacherId: "",
-      classId: ""
+  // Initialize assignments with existing teacher assignments
+  React.useEffect(() => {
+    const initialAssignments: Record<string, string> = {};
+    mockClasses.forEach(classItem => {
+      if (classItem.teacherId) {
+        initialAssignments[classItem.id] = classItem.teacherId;
+      }
     });
-    setIsDialogOpen(true);
+    setAssignments(initialAssignments);
+  }, []);
+
+  const handleAssignment = (classId: string, teacherId: string) => {
+    setAssignments(prev => ({
+      ...prev,
+      [classId]: teacherId
+    }));
   };
 
-  // Handle form submission for adding a new assignment
-  const handleSubmit = async () => {
-    // Validate form data
-    if (!formData.teacherId || !formData.classId) {
-      toast({
-        variant: "destructive",
-        title: "Validation Error",
-        description: "Please select both a teacher and a class."
-      });
-      return;
-    }
-
-    // Check if assignment already exists
-    const isDuplicate = assignments.some(assignment => assignment.teacherId === formData.teacherId && assignment.classId === formData.classId);
-    if (isDuplicate) {
-      toast({
-        variant: "destructive",
-        title: "Duplicate Assignment",
-        description: "This teacher is already assigned to this class."
-      });
-      return;
-    }
-    setIsSubmitting(true);
+  const handleSaveAssignments = async () => {
+    setLoading(true);
+    
     try {
-      // In a real app, this would make an API call to save the data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-      // Add new assignment to state
-      const newAssignment = {
-        id: `assign-${Date.now()}`,
-        teacherId: formData.teacherId,
-        classId: formData.classId,
-        assignedAt: new Date()
-      };
-      setAssignments([...assignments, newAssignment]);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       toast({
-        title: "Teacher Assigned",
-        description: "The teacher has been successfully assigned to the class."
-      });
-
-      // Close dialog
-      setIsDialogOpen(false);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to assign the teacher. Please try again."
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle unassigning a teacher from a class
-  const handleUnassign = async (assignmentId: string) => {
-    setIsSubmitting(true);
-    try {
-      // In a real app, this would make an API call to delete the data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-      // Remove assignment from state
-      setAssignments(assignments.filter(a => a.id !== assignmentId));
-      toast({
-        title: "Teacher Unassigned",
-        description: "The teacher has been successfully unassigned from the class."
+        title: "Assignments Saved",
+        description: "Teacher assignments have been updated successfully.",
       });
     } catch (error) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to unassign the teacher. Please try again."
+        description: "Failed to save teacher assignments.",
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // Get teacher name by ID
   const getTeacherName = (teacherId: string) => {
-    const teacher = mockUsers.find(user => user.id === teacherId);
+    const teacher = mockTeachers.find(t => t.id === teacherId);
     return teacher ? teacher.name : "Unknown Teacher";
   };
 
-  // Get class details by ID
-  const getClassDetails = (classId: string) => {
-    const classItem = mockClasses.find(c => c.id === classId);
-    return classItem ? {
-      courseCode: classItem.courseCode,
-      courseName: classItem.courseName,
-      departmentCode: classItem.departmentCode,
-      session: classItem.session,
-      section: classItem.section
-    } : {
-      courseCode: "Unknown",
-      courseName: "Unknown",
-      departmentCode: "",
-      session: "",
-      section: ""
-    };
-  };
+  const assignedCount = Object.keys(assignments).length;
+  const totalClasses = mockClasses.length;
 
-  // Get department name from ID
-  const getDepartmentName = (departmentCode: string): string => {
-    const department = mockDepartments.find(d => d.id === departmentCode || d.code === departmentCode);
-    return department ? department.name : departmentCode;
-  };
-  return <DashboardLayout title="Assign Teachers" description="Assign teachers to specific classes">
+  return (
+    <DashboardLayout 
+      title="Assign Teachers" 
+      description="Assign teachers to specific classes for the semester."
+    >
       <QuickAdminNav />
-      {/* Search and Add Button */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input placeholder="Search assignments..." value={teacherSearchTerm} onChange={e => setTeacherSearchTerm(e.target.value)} className="pl-10 border-white/10" />
-        </div>
-        
-        <Button onClick={handleAddAssignment} className="font-medium">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Assignment
-        </Button>
-      </div>
       
-      {/* Assignments Table */}
-      <div className="rounded-md border border-white/10">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Teacher</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Session & Section</TableHead>
-              <TableHead className="w-[100px] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {assignments.length > 0 ? assignments.map(assignment => {
-            const classDetails = getClassDetails(assignment.classId);
-            return <TableRow key={assignment.id}>
-                    <TableCell>
-                      <div className="font-medium text-white">
-                        {getTeacherName(assignment.teacherId)}
-                      </div>
-                      <div className="text-sm text-white/60">
-                        {mockUsers.find(u => u.id === assignment.teacherId)?.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-white">
-                        {classDetails.courseCode}
-                      </div>
-                      <div className="text-sm text-white/60">
-                        {classDetails.courseName}
-                      </div>
-                    </TableCell>
-              <TableCell>
-  {getDepartmentName(classDetails.departmentCode)} {/* Changed from departmentId to departmentCode */}
-              </TableCell>
-                    <TableCell>
-                      {classDetails.session}, Section {classDetails.section}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleUnassign(assignment.id)} disabled={isSubmitting}>
-                        <X className="h-4 w-4 text-red-500" />
-                        <span className="sr-only">Unassign</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>;
-          }) : <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  <p className="text-white/70">No teacher assignments found.</p>
-                  <p className="text-sm text-white/50">
-                    Click "Add Assignment" to assign teachers to classes.
-                  </p>
-                </TableCell>
-              </TableRow>}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Add Assignment Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Assign Teacher to Class</DialogTitle>
-            <DialogDescription>
-              Select a teacher and a class to create a new assignment.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-6 py-4">
-            <div className="space-y-2">
-              <label htmlFor="teacher" className="text-sm font-medium">
-                Teacher
-              </label>
-              <div className="space-y-2">
-                <Input placeholder="Search teachers..." value={teacherSearchTerm} onChange={e => setTeacherSearchTerm(e.target.value)} className="border-white/10" />
-                <Select value={formData.teacherId} onValueChange={value => setFormData({
-                ...formData,
-                teacherId: value
-              })}>
-                  <SelectTrigger className="border-white/10">
-                    <SelectValue placeholder="Select Teacher" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teachers.length > 0 ? teachers.map(teacher => <SelectItem key={teacher.id} value={teacher.id}>
-                          {teacher.name} ({teacher.email})
-                        </SelectItem>) : <div className="p-2 text-center text-sm text-white/60">
-                        No teachers found. Try adjusting your search.
-                      </div>}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Class</label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input placeholder="Search classes..." value={classSearchTerm} onChange={e => setClassSearchTerm(e.target.value)} className="border-white/10" />
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger className="w-[180px] border-white/10">
-                      <SelectValue placeholder="All Departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* Use "all" instead of "" */}
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {mockDepartments.map(dept => <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>)}
-                    </SelectContent>
-                  </Select>
+      <div className="space-y-6">
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-800">
+                  <BookOpen size={24} className="text-white" />
                 </div>
-                <Select value={formData.classId} onValueChange={value => setFormData({
-                ...formData,
-                classId: value
-              })}>
-                  <SelectTrigger className="border-white/10">
-                    <SelectValue placeholder="Select Class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                  {classes.length > 0 ? classes.map((classItem: Class) => {
-                    const departmentName = getDepartmentName(classItem.departmentCode); // Changed from departmentId to departmentCode
-                    return <SelectItem key={classItem.id} value={classItem.id}>
-        {classItem.courseCode} - {departmentName}, {classItem.session}
-      </SelectItem>;
-                  }) : <div className="p-2 text-center text-sm text-white/60">
-    No classes found. Try adjusting your search or filter.
-  </div>}
-                  </SelectContent>
-                </Select>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-white/70">Total Classes</p>
+                  <h3 className="text-2xl font-bold text-white">{totalClasses}</h3>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-green-600 to-green-800">
+                  <Users size={24} className="text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-white/70">Assigned</p>
+                  <h3 className="text-2xl font-bold text-white">{assignedCount}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-orange-600 to-orange-800">
+                  <BookOpen size={24} className="text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-white/70">Unassigned</p>
+                  <h3 className="text-2xl font-bold text-white">{totalClasses - assignedCount}</h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Assignment List */}
+        <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-white">Class Assignments</CardTitle>
+              <Button 
+                onClick={handleSaveAssignments}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} className="mr-2" />
+                    Save Assignments
+                  </>
+                )}
+              </Button>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Assign Teacher
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>;
-};
-export default AssignTeachers;
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {mockClasses.map((classItem) => (
+                <div 
+                  key={classItem.id} 
+                  className="flex items-center justify-between p-4 border border-white/10 rounded-lg bg-white/5"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400">
+                        {classItem.departmentCode}
+                      </Badge>
+                      <span className="text-white font-medium">
+                        {classItem.courseName} - Section {classItem.section}
+                      </span>
+                      <span className="text-white/60">({classItem.session})</span>
+                    </div>
+                    <p className="text-white/70 text-sm mt-1">
+                      Course Code: {classItem.courseCode}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-4">
+                    <div className="w-64">
+                      <Select
+                        value={assignments[classItem.id] || ""}
+                        onValueChange={(value) => handleAssignment(classItem.id, value)}
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                          <SelectValue placeholder="Select teacher" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-white/10">
+                          <SelectItem value="" className="text-white">
+                            No teacher assigned
+                          </SelectItem>
+                          {mockTeachers
+                            .filter(teacher => teacher.department === classItem.departmentCode)
+                            .map((teacher) => (
+                              <SelectItem key={teacher.id} value={teacher.id} className="text-white">
+                                {teacher.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {assignments[classItem.id] && (
+                      <Badge variant="outline" className="bg-green-500/10 text-green-400">
+                        Assigned
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}
