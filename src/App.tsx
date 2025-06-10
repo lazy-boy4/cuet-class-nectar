@@ -14,6 +14,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
+import UserProfile from "./pages/UserProfile";
 
 // Public pages
 import About from "./pages/About";
@@ -73,6 +74,7 @@ function App() {
             <Route path="/notices" element={<NoticeBoard />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/search" element={<GlobalSearch />} />
+            <Route path="/profile/:userId" element={<UserProfile />} />
             
             {/* Public information pages */}
             <Route path="/about" element={<About />} />

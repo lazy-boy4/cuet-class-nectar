@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Filter, Users, GraduationCap, Mail, Building, User, Shield, Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ interface ExtendedUser extends UserType {
 }
 
 const GlobalSearch = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterDepartment, setFilterDepartment] = useState("all");
@@ -77,7 +79,8 @@ const GlobalSearch = () => {
         const matchesQuery = searchQuery === "" || 
           user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (user.department && user.department.toLowerCase().includes(searchQuery.toLowerCase()));
+          (user.department && user.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (user.role === "student" && user.email.includes(searchQuery)); // Search by student ID extracted from email
         
         const matchesRole = filterRole === "all" || user.role === filterRole;
         const matchesDepartment = filterDepartment === "all" || user.department === filterDepartment;
@@ -94,8 +97,15 @@ const GlobalSearch = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleProfileClick = (user: ExtendedUser) => {
+    navigate(`/profile/${user.id}`);
+  };
+
   const ProfileCard = ({ user }: { user: ExtendedUser }) => (
-    <Card className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+    <Card 
+      className="border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+      onClick={() => handleProfileClick(user)}
+    >
       <CardHeader>
         <div className="flex items-start space-x-4">
           <Avatar className="w-16 h-16">
@@ -212,7 +222,7 @@ const GlobalSearch = () => {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-white/50" />
               <Input
-                placeholder="Search by name, email, or department..."
+                placeholder="Search by name, email, department, or student ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-white/5 border-white/10 text-white"
