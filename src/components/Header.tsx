@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronRight, LogOut, User } from "lucide-react";
+import { Menu, X, ChevronRight, LogOut, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -161,6 +161,10 @@ const Header = () => {
                   Dashboard
                 </Link>
               )}
+              <Link to="/search" className="navbar-link flex items-center space-x-1">
+                <Search className="w-4 h-4" />
+                <span>Search</span>
+              </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-white/10 transition-colors">
@@ -258,6 +262,14 @@ const Header = () => {
                   <ChevronRight size={16} />
                 </Link>
               )}
+              <Link
+                to="/search"
+                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Search size={16} />
+                <span>Search</span>
+              </Link>
               <button
                 onClick={() => {
                   handleProfileClick();
