@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from "react";
-import { Search, Filter, Grid, List, User, GraduationCap, Mail, Phone, MapPin } from "lucide-react";
+import { Search, Grid, List, Mail, MapPin, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,98 +59,57 @@ const GlobalSearch = () => {
     
     return (
       <Link to={`/profile/${user.id}`}>
-        <Card className="border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer">
+        <Card className="border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer h-full">
           <CardContent className="p-6">
-            <div className="flex items-start space-x-4">
-              <Avatar className="h-12 w-12">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <Avatar className="h-16 w-16">
                 <AvatarImage src={user.profileImage} alt={user.name} />
-                <AvatarFallback className="bg-blue-600 text-white">
+                <AvatarFallback className="bg-blue-600 text-white text-lg">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="text-white font-semibold truncate">{user.name}</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center space-x-2">
+                  <h3 className="text-white font-semibold">{user.name}</h3>
                   <Badge variant={user.role === "student" ? "default" : user.role === "teacher" ? "secondary" : "destructive"}>
-                    {user.role}
+                    {user.role === "admin" ? "Admin" : user.role === "teacher" ? "Teacher" : "Student"}
                   </Badge>
                   {user.isClassRepresentative && (
-                    <Badge variant="outline" className="text-yellow-400 border-yellow-400">CR</Badge>
+                    <Badge variant="outline" className="text-yellow-400 border-yellow-400 text-xs">CR</Badge>
                   )}
                 </div>
                 
-                <div className="space-y-1">
-                  {studentId && (
-                    <div className="flex items-center space-x-2 text-sm text-white/70">
-                      <GraduationCap className="w-3 h-3" />
-                      <span>ID: {studentId}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 text-sm text-white/70">
+                <p className="text-white/70 text-sm">
+                  Experienced educator specializing in software engineering and algorithms.
+                </p>
+                
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center justify-center space-x-2 text-white/70">
                     <Mail className="w-3 h-3" />
                     <span className="truncate">{user.email}</span>
                   </div>
                   
                   {user.department && (
-                    <div className="flex items-center space-x-2 text-sm text-white/70">
+                    <div className="flex items-center justify-center space-x-2 text-white/70">
                       <MapPin className="w-3 h-3" />
                       <span className="truncate">{user.department}</span>
                     </div>
                   )}
                   
-                  {user.session && user.section && (
-                    <div className="text-sm text-white/70">
-                      Session: {user.session} | Section: {user.section}
+                  {studentId && (
+                    <div className="flex items-center justify-center space-x-2 text-white/70">
+                      <GraduationCap className="w-3 h-3" />
+                      <span>ID: {studentId}</span>
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-    );
-  };
-
-  const UserListItem = ({ user }: { user: typeof mockUsers[0] }) => {
-    const studentId = getStudentId(user.email);
-    
-    return (
-      <Link to={`/profile/${user.id}`}>
-        <Card className="border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.profileImage} alt={user.name} />
-                  <AvatarFallback className="bg-blue-600 text-white">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
                 
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-white font-medium">{user.name}</h3>
-                    {studentId && (
-                      <span className="text-sm text-white/70">({studentId})</span>
-                    )}
-                    {user.isClassRepresentative && (
-                      <Badge variant="outline" className="text-yellow-400 border-yellow-400 text-xs">CR</Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-white/70">{user.email}</p>
+                <div className="flex flex-wrap justify-center gap-1 mt-3">
+                  <Badge variant="outline" className="text-xs">Research</Badge>
+                  <Badge variant="outline" className="text-xs">Teaching</Badge>
+                  <Badge variant="outline" className="text-xs">Software Architecture</Badge>
                 </div>
-              </div>
-              
-              <div className="text-right">
-                <Badge variant={user.role === "student" ? "default" : user.role === "teacher" ? "secondary" : "destructive"}>
-                  {user.role}
-                </Badge>
-                {user.department && (
-                  <p className="text-sm text-white/70 mt-1">{user.department}</p>
-                )}
               </div>
             </div>
           </CardContent>
@@ -160,29 +119,33 @@ const GlobalSearch = () => {
   };
 
   return (
-    <DashboardLayout 
-      title="Global Search" 
-      description="Find students, teachers, and staff across CUET"
-    >
-      <div className="space-y-6">
-        {/* Search and Filters */}
-        <div className="space-y-4">
+    <DashboardLayout title="Global Search" description="Find and connect with students and teachers">
+      <div className="space-y-8">
+        {/* Search People Section */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2 flex items-center space-x-2">
+              <Search className="w-6 h-6" />
+              <span>Search People</span>
+            </h2>
+          </div>
+          
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-white/50" />
             <Input
-              placeholder="Search by name, email, or student ID..."
+              placeholder="Search by name, email, or department..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50"
+              className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/50 h-12"
             />
           </div>
           
           <div className="flex flex-wrap gap-4 items-center">
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[140px] bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Role" />
+                <SelectValue placeholder="All Roles" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-800 border-white/10">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="student">Students</SelectItem>
                 <SelectItem value="teacher">Teachers</SelectItem>
@@ -192,66 +155,58 @@ const GlobalSearch = () => {
             
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
               <SelectTrigger className="w-[200px] bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="Department" />
+                <SelectValue placeholder="All Departments" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-800 border-white/10">
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map(dept => (
                   <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Results Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white">
+              Search Results ({filteredUsers.length})
+            </h3>
             
-            <div className="flex space-x-2 ml-auto">
+            <div className="flex space-x-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("grid")}
-                className="bg-white/5 border-white/10"
+                className={viewMode === "grid" ? "bg-blue-600 hover:bg-blue-700" : "bg-white/5 border-white/10 hover:bg-white/10"}
               >
-                <Grid className="w-4 h-4" />
+                Grid View
               </Button>
               <Button
                 variant={viewMode === "list" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="bg-white/5 border-white/10"
+                className={viewMode === "list" ? "bg-blue-600 hover:bg-blue-700" : "bg-white/5 border-white/10 hover:bg-white/10"}
               >
-                <List className="w-4 h-4" />
+                List View
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Results */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">
-              Search Results ({filteredUsers.length})
-            </h2>
           </div>
           
           {filteredUsers.length === 0 ? (
             <Card className="border-white/10 bg-white/5">
               <CardContent className="p-8 text-center">
-                <User className="w-12 h-12 text-white/50 mx-auto mb-4" />
+                <Search className="w-12 h-12 text-white/50 mx-auto mb-4" />
                 <h3 className="text-white font-medium mb-2">No users found</h3>
                 <p className="text-white/70">Try adjusting your search terms or filters</p>
               </CardContent>
             </Card>
           ) : (
-            <div className={
-              viewMode === "grid" 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "space-y-4"
-            }>
-              {filteredUsers.map(user => 
-                viewMode === "grid" ? (
-                  <UserCard key={user.id} user={user} />
-                ) : (
-                  <UserListItem key={user.id} user={user} />
-                )
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredUsers.map(user => (
+                <UserCard key={user.id} user={user} />
+              ))}
             </div>
           )}
         </div>
