@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronRight, LogOut, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -167,13 +166,8 @@ const Header = () => {
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-white/10 transition-colors">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={userProfile?.picture} alt={userProfile?.name || "Profile"} />
-                      <AvatarFallback className="bg-blue-600 text-white text-sm">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
+                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-black border-2 border-white/20 hover:border-white/40 transition-colors">
+                    <User className="w-5 h-5 text-white" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
