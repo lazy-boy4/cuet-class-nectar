@@ -47,7 +47,6 @@ import ClassDetails from "./pages/student/ClassDetails";
 // Shared routes
 import NoticeBoard from "./pages/NoticeBoard";
 import GlobalSearch from "./pages/GlobalSearch";
-import UserProfile from "./pages/UserProfile";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -74,7 +73,6 @@ function App() {
             <Route path="/notices" element={<NoticeBoard />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/search" element={<GlobalSearch />} />
-            <Route path="/profile/:userId" element={<UserProfile />} />
             
             {/* Public information pages */}
             <Route path="/about" element={<About />} />
