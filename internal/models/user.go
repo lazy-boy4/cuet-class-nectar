@@ -79,3 +79,13 @@ type BulkUploadStudentData struct {
 	PictureURL *string `csv:"picture_url"` // Optional
 	// Role will be defaulted to 'student' by the service
 }
+
+// StudentProfileUpdateInput defines fields a student can update for their own profile.
+type StudentProfileUpdateInput struct {
+	FullName   *string `json:"full_name,omitempty"`
+	PictureURL *string `json:"picture_url,omitempty"`
+	Section    *string `json:"section,omitempty"` // Student might be able to update their section
+	// Password changes should be a separate endpoint.
+	// Email changes are complex (verification) and usually admin-driven or separate flow.
+	// Batch, StudentID, DeptCode are generally not student-editable.
+}

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 	// "strconv"
-	// "github.com/google/uuid" // Types are used via models package
+	"github.com/google/uuid" // Added back for uuid.Parse
 
 	"github.com/gin-gonic/gin"
 )
@@ -522,7 +522,7 @@ func UnassignTeachersFromClassHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Teachers unassigned from class successfully.", "successful_unassignments": successfulUnassignments})
 }
-func GetTeachersByClassHandler(c *gin.Context) {
+func GetTeachersByClassHandler(c *gin.Context) { // This was defined in teacher_handlers.go as well. Consolidating here.
 	classID := c.Param("classId")
 	if classID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Class ID is required in path."})
@@ -541,7 +541,6 @@ func GetTeachersByClassHandler(c *gin.Context) {
 }
 
 // --- Promote/Demote CR Handlers ---
-
 func PromoteStudentToCRHandler(c *gin.Context) {
 	userID := c.Param("userId")
 	if userID == "" {
@@ -561,7 +560,6 @@ func PromoteStudentToCRHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User successfully promoted to CR.", "user": updatedUser})
 }
-
 func DemoteCRToStudentHandler(c *gin.Context) {
 	userID := c.Param("userId")
 	if userID == "" {
@@ -572,7 +570,7 @@ func DemoteCRToStudentHandler(c *gin.Context) {
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		} else if strings.Contains(strings.ToLower(err.Error()), "is not a cr") || strings.Contains(strings.ToLower(err.Error()), "cannot demote") { // case insensitive check for "cr"
+		} else if strings.Contains(strings.ToLower(err.Error()), "is not a cr") {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to demote CR to student: " + err.Error()})
@@ -580,4 +578,26 @@ func DemoteCRToStudentHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "User successfully demoted to Student.", "user": updatedUser})
+}
+
+// --- Global Notice Handler (Admin) ---
+func CreateGlobalNoticeHandler(c *gin.Context) {
+	var input models.NoticeInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		return
+	}
+	input.ClassID = nil
+	userIDval, _ := c.Get("userID")
+	authorID, err := uuid.Parse(userIDval.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in token for authoring global notice"})
+		return
+	}
+	notice, err := services.CreateNotice(input, authorID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create global notice: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, notice)
 }

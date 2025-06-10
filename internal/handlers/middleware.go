@@ -94,3 +94,46 @@ func TeacherRequired() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// CRRequiredMiddleware is a middleware to ensure the user is a Class Representative.
+// It should be used AFTER the AuthMiddleware.
+// Further checks if the CR is associated with a specific class might be needed in the service layer.
+func CRRequiredMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDValue, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context, ensure AuthMiddleware runs first"})
+			c.Abort()
+			return
+		}
+		userID, ok := userIDValue.(string)
+		if !ok || userID == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID format in context"})
+			c.Abort()
+			return
+		}
+
+		role, err := services.GetUserRole(userID) // Assumes GetUserRole is in services package
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "is empty") {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: User profile incomplete or role not assigned."})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user role: " + err.Error()})
+			}
+			c.Abort()
+			return
+		}
+
+		// For CR actions, user must be 'cr'. Admins can also perform CR actions via their own routes or if logic allows.
+		// For this specific middleware, we check for 'cr'. Admins can be handled by TeacherRequired or AdminRequired.
+		// If an admin needs to perform CR actions, they should use admin routes or this middleware should allow 'admin' too.
+		// For now, strictly 'cr'.
+		if role != "cr" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Class Representative privileges required (current role: " + role + ")."})
+			c.Abort()
+			return
+		}
+		c.Set("userRole", role) // Set role in context for handler use if needed
+		c.Next()
+	}
+}

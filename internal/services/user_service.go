@@ -6,6 +6,7 @@ import (
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	// "os" // No longer directly used as admin auth calls are stubbed
+	"github.com/google/uuid" // Added for userID type in UpdateOwnUserProfile
 	// "github.com/nedpals/supabase-go" // No longer directly used for types like AdminUserCredentials
 )
 
@@ -116,77 +117,6 @@ func AdminDeleteUser(userID string) error {
 	return fmt.Errorf("AdminDeleteUser functionality is not supported by the current Supabase Go client (nedpals/supabase-go@v0.5.0)")
 }
 
-// BulkUpsertStudentProfiles processes a list of student data to insert profiles.
-// It currently attempts to INSERT profiles. True upsert (update on conflict) functionality
-// is complex with nedpals/supabase-go@v0.5.0's simple Insert API and would require
-// custom header management (e.g., "Prefer: resolution=merge-duplicates") or a database function.
-// This implementation will likely error on duplicate unique keys (email, student_id, id).
-// Returns counts of successful creations and a list of errors.
-func BulkUpsertStudentProfiles(students []models.BulkUploadStudentData) (createdCount int, updatedCount int, errors []error) {
-	client := sbClient.GetClient()
-	if client == nil {
-		errors = append(errors, fmt.Errorf("Supabase client not initialized"))
-		return
-	}
-
-	for i, studentData := range students { // Added index for more specific error messages
-		if studentData.Email == "" || studentData.FullName == "" || studentData.StudentID == "" || studentData.DeptCode == "" || studentData.Batch == "" {
-			errors = append(errors, fmt.Errorf("row %d: missing required fields (Email, FullName, StudentID, DeptCode, Batch) for student email '%s' (or student_id '%s')", i+1, studentData.Email, studentData.StudentID))
-			continue
-		}
-
-		profileData := map[string]interface{}{
-			"email":      studentData.Email,
-			"full_name":  studentData.FullName,
-			"student_id": studentData.StudentID,
-			"dept_code":  studentData.DeptCode,
-			"batch":      studentData.Batch,
-			"role":       "student", // Default role for bulk upload
-		}
-		if studentData.UUID != "" {
-			profileData["id"] = studentData.UUID // Admin provides auth.user.id
-		}
-		if studentData.Section != nil && *studentData.Section != "" {
-			profileData["section"] = *studentData.Section
-		} else {
-			profileData["section"] = nil // Explicitly set to null if empty or not provided
-		}
-		if studentData.PictureURL != nil && *studentData.PictureURL != "" {
-			profileData["picture_url"] = *studentData.PictureURL
-		} else {
-			profileData["picture_url"] = nil // Explicitly set to null
-		}
-
-		var results []models.User // nedpals/supabase-go Insert expects a slice to populate
-
-		// Using simplified Insert(data) for nedpals/supabase-go@v0.5.0
-		// This will fail if a user with the same unique key (id, email, student_id) already exists.
-		// A true "upsert" is not directly supported by this simple Insert method.
-		err := client.DB.From("users").Insert(profileData).Execute(&results)
-
-		if err != nil {
-			errors = append(errors, fmt.Errorf("row %d (email: %s, student_id: %s): failed to insert profile: %w", i+1, studentData.Email, studentData.StudentID, err))
-			continue
-		}
-
-		if len(results) > 0 {
-			createdCount++
-		} else {
-			// This case might indicate that the insert operation succeeded (no error) but didn't return the created row.
-			// This can happen if "Prefer: return=representation" is not set by default by the client library.
-			// For simplicity, we count it as a success if no error, but log a warning/error for investigation.
-			// However, the service function signature implies it should return the created model.
-			// Let's consider it a successful operation for now if no error, but it's a bit ambiguous.
-			// The previous service functions for single CRUD operations error out if len(results) == 0.
-			// For bulk, we might be more lenient or just note it.
-			// For consistency with other Create methods, let's treat no results as an issue.
-			errors = append(errors, fmt.Errorf("row %d (email: %s, student_id: %s): insert reported success but returned no data", i+1, studentData.Email, studentData.StudentID))
-		}
-	}
-	// updatedCount is not used in this simplified insert-only version.
-	return
-}
-
 // PromoteStudentToCR changes a user's role from 'student' to 'cr'.
 func PromoteStudentToCR(userID string) (*models.User, error) {
 	client := sbClient.GetClient()
@@ -194,7 +124,6 @@ func PromoteStudentToCR(userID string) (*models.User, error) {
 		return nil, fmt.Errorf("Supabase client not initialized")
 	}
 
-	// Step 1: Fetch the user to check their current role
 	var users []models.User
 	err := client.DB.From("users").Select("*").Eq("id", userID).Execute(&users)
 	if err != nil {
@@ -209,22 +138,17 @@ func PromoteStudentToCR(userID string) (*models.User, error) {
 		return nil, fmt.Errorf("user %s (ID: %s) is not a student (current role: %s). Cannot promote to CR", currentUser.Email, userID, currentUser.Role)
 	}
 
-	// Step 2: Update the role to 'cr'
 	updateData := map[string]interface{}{
 		"role": "cr",
 	}
 	var updatedUserResult []models.User
-	// Using simplified Update(data) for nedpals/supabase-go@v0.5.0
 	err = client.DB.From("users").Update(updateData).Eq("id", userID).Execute(&updatedUserResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update role to 'cr' for user ID %s: %w", userID, err)
 	}
 	if len(updatedUserResult) == 0 {
-		// This implies "Prefer: return=representation" was not set or RLS issues.
-		// Or the user record was not actually updated (e.g., RLS prevented or data was identical).
 		return nil, fmt.Errorf("role update to 'cr' for user ID %s returned no data (user may not exist, RLS issue, or no change)", userID)
 	}
-
 	return &updatedUserResult[0], nil
 }
 
@@ -234,7 +158,6 @@ func DemoteCRToStudent(userID string) (*models.User, error) {
 	if client == nil {
 		return nil, fmt.Errorf("Supabase client not initialized")
 	}
-
 	var users []models.User
 	err := client.DB.From("users").Select("*").Eq("id", userID).Execute(&users)
 	if err != nil {
@@ -243,15 +166,12 @@ func DemoteCRToStudent(userID string) (*models.User, error) {
 	if len(users) == 0 {
 		return nil, fmt.Errorf("user with ID %s not found for demotion", userID)
 	}
-
 	currentUser := users[0]
 	if currentUser.Role != "cr" {
 		return nil, fmt.Errorf("user %s (ID: %s) is not a CR (current role: %s). Cannot demote", currentUser.Email, userID, currentUser.Role)
 	}
-
 	updateData := map[string]interface{}{"role": "student"}
 	var updatedUserDetails []models.User
-	// Using simplified Update(data) for nedpals/supabase-go@v0.5.0
 	err = client.DB.From("users").Update(updateData).Eq("id", userID).Execute(&updatedUserDetails)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update role to 'student' for user ID %s: %w", userID, err)
@@ -260,4 +180,114 @@ func DemoteCRToStudent(userID string) (*models.User, error) {
 		return nil, fmt.Errorf("role update to 'student' for user ID %s returned no data (user may not exist, RLS issue, or no change)", userID)
 	}
 	return &updatedUserDetails[0], nil
+}
+
+// UpdateOwnUserProfile allows a student to update their own profile information.
+func UpdateOwnUserProfile(userID uuid.UUID, input models.StudentProfileUpdateInput) (*models.User, error) {
+	client := sbClient.GetClient()
+	if client == nil {
+		return nil, fmt.Errorf("Supabase client not initialized")
+	}
+	updateData := make(map[string]interface{})
+	if input.FullName != nil {
+		if *input.FullName == "" {
+			updateData["full_name"] = nil
+		} else {
+			updateData["full_name"] = *input.FullName
+		}
+	}
+	if input.PictureURL != nil {
+		if *input.PictureURL == "" {
+			updateData["picture_url"] = nil
+		} else {
+			updateData["picture_url"] = *input.PictureURL
+		}
+	}
+	if input.Section != nil {
+		if *input.Section == "" {
+			updateData["section"] = nil
+		} else {
+			updateData["section"] = *input.Section
+		}
+	}
+	if len(updateData) == 0 {
+		var currentUserModels []models.User
+		err := client.DB.From("users").Select("*").Eq("id", userID.String()).Execute(&currentUserModels)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch user %s: %w", userID.String(), err)
+		}
+		if len(currentUserModels) == 0 {
+			return nil, fmt.Errorf("user %s not found", userID.String())
+		}
+		return &currentUserModels[0], nil
+	}
+	var updatedUserModels []models.User
+	err := client.DB.From("users").Update(updateData).Eq("id", userID.String()).Execute(&updatedUserModels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update own user profile for ID %s: %w", userID, err)
+	}
+	if len(updatedUserModels) == 0 {
+		return nil, fmt.Errorf("own user profile update for ID %s returned no data (user may not exist or RLS issue)", userID)
+	}
+	return &updatedUserModels[0], nil
+}
+
+// BulkUpsertStudentProfiles processes a list of student data to insert profiles.
+// It currently attempts to INSERT profiles. True upsert (update on conflict) functionality
+// is complex with nedpals/supabase-go@v0.5.0's simple Insert API and would require
+// custom header management (e.g., "Prefer: resolution=merge-duplicates") or a database function.
+// This implementation will likely error on duplicate unique keys (email, student_id, id).
+// Returns counts of successful creations and a list of errors.
+func BulkUpsertStudentProfiles(students []models.BulkUploadStudentData) (createdCount int, updatedCount int, serviceErrors []error) {
+	client := sbClient.GetClient()
+	if client == nil {
+		serviceErrors = append(serviceErrors, fmt.Errorf("Supabase client not initialized"))
+		return
+	}
+
+	for i, studentData := range students { // Added index for more specific error messages
+		if studentData.Email == "" || studentData.FullName == "" || studentData.StudentID == "" || studentData.DeptCode == "" || studentData.Batch == "" {
+			serviceErrors = append(serviceErrors, fmt.Errorf("row %d: missing required fields (Email, FullName, StudentID, DeptCode, Batch) for student email '%s' (or student_id '%s')", i+1, studentData.Email, studentData.StudentID))
+			continue
+		}
+
+		profileData := map[string]interface{}{
+			"email":      studentData.Email,
+			"full_name":  studentData.FullName,
+			"student_id": studentData.StudentID,
+			"dept_code":  studentData.DeptCode,
+			"batch":      studentData.Batch,
+			"role":       "student", // Default role for bulk upload
+		}
+		if studentData.UUID != "" {
+			profileData["id"] = studentData.UUID
+		}
+		if studentData.Section != nil && *studentData.Section != "" {
+			profileData["section"] = *studentData.Section
+		} else {
+			profileData["section"] = nil
+		}
+		if studentData.PictureURL != nil && *studentData.PictureURL != "" {
+			profileData["picture_url"] = *studentData.PictureURL
+		} else {
+			profileData["picture_url"] = nil
+		}
+
+		var results []models.User
+
+		err := client.DB.From("users").Insert(profileData).Execute(&results)
+
+		if err != nil {
+			serviceErrors = append(serviceErrors, fmt.Errorf("row %d (email: %s, student_id: %s): failed to insert profile: %w", i+1, studentData.Email, studentData.StudentID, err))
+			continue
+		}
+
+		if len(results) > 0 {
+			createdCount++
+		} else {
+			serviceErrors = append(serviceErrors, fmt.Errorf("row %d (email: %s, student_id: %s): insert reported success but returned no data", i+1, studentData.Email, studentData.StudentID))
+		}
+	}
+	// updatedCount is not used in this simplified insert-only version.
+	return
 }
