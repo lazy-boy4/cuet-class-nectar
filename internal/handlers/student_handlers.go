@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	"github.com/lazy-boy4/cuet-class-nectar/internal/services"
 	"net/http"
@@ -44,7 +45,7 @@ func UpdateOwnProfileHandler(c *gin.Context) { /* ... */
 	userIDval, _ := c.Get("userID")
 	userID, err := uuid.Parse(userIDval.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in token for profile update"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID in token"})
 		return
 	}
 	var input models.StudentProfileUpdateInput
@@ -188,38 +189,31 @@ func GetPendingEnrollmentsForClassHandler(c *gin.Context) { /* ... */
 }
 
 // --- CR Class Event Management Handlers ---
-func CreateClassEventHandler(c *gin.Context) {
-	crUserIDval, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
-		return
-	}
+func CreateClassEventHandler(c *gin.Context) { /* ... */
+	crUserIDval, _ := c.Get("userID")
 	crUserID, err := uuid.Parse(crUserIDval.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid CR User ID in token"})
 		return
 	}
-
 	classIDStr := c.Param("classId")
 	classID, err := strconv.Atoi(classIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
 		return
 	}
-
 	var input models.ClassEventInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
 		return
 	}
-
 	event, err := services.CreateClassEvent(classID, input, crUserID)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not authorized") {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		} else if strings.Contains(strings.ToLower(err.Error()), "violates foreign key constraint") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data for event (e.g., class_id): " + err.Error()})
-		} else if strings.Contains(strings.ToLower(err.Error()), "23505") || strings.Contains(strings.ToLower(err.Error()), "unique constraint") { // Generic unique constraint
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data for event: " + err.Error()})
+		} else if strings.Contains(strings.ToLower(err.Error()), "23505") || strings.Contains(strings.ToLower(err.Error()), "unique constraint") {
 			c.JSON(http.StatusConflict, gin.H{"error": "Class event conflicts with an existing one."})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create class event: " + err.Error()})
@@ -228,17 +222,13 @@ func CreateClassEventHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, event)
 }
-
-// GetClassEventsHandler can be used by students, CRs, teachers for a class they are part of.
-// Authorization for which classes a user can view events for should be handled by RLS or service layer if needed.
-func GetClassEventsHandler(c *gin.Context) {
+func GetClassEventsHandler(c *gin.Context) { /* ... */
 	classIDStr := c.Param("classId")
 	classID, err := strconv.Atoi(classIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
 		return
 	}
-
 	events, err := services.GetClassEventsByClassID(classID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve class events: " + err.Error()})
@@ -250,39 +240,30 @@ func GetClassEventsHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, events)
 }
-
-func UpdateClassEventHandler(c *gin.Context) {
-	crUserIDval, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
-		return
-	}
+func UpdateClassEventHandler(c *gin.Context) { /* ... */
+	crUserIDval, _ := c.Get("userID")
 	crUserID, err := uuid.Parse(crUserIDval.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid CR User ID in token"})
 		return
 	}
-
 	classIDStr := c.Param("classId")
 	classID, err := strconv.Atoi(classIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
 		return
 	}
-
 	eventIDStr := c.Param("eventId")
 	eventID, err := strconv.Atoi(eventIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Event ID in path: " + eventIDStr})
 		return
 	}
-
 	var input models.ClassEventInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
 		return
 	}
-
 	updatedEvent, err := services.UpdateClassEvent(eventID, classID, input, crUserID)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not authorized") {
@@ -300,8 +281,41 @@ func UpdateClassEventHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, updatedEvent)
 }
+func DeleteClassEventHandler(c *gin.Context) { /* ... */
+	crUserIDval, _ := c.Get("userID")
+	crUserID, err := uuid.Parse(crUserIDval.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid CR User ID in token"})
+		return
+	}
+	classIDStr := c.Param("classId")
+	classID, err := strconv.Atoi(classIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
+		return
+	}
+	eventIDStr := c.Param("eventId")
+	eventID, err := strconv.Atoi(eventIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Event ID in path: " + eventIDStr})
+		return
+	}
+	err = services.DeleteClassEvent(eventID, classID, crUserID)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not authorized") {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else if strings.Contains(strings.ToLower(err.Error()), "not found") || strings.Contains(strings.ToLower(err.Error()), "does not belong to class") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found or does not belong to the specified class."})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete class event: " + err.Error()})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Class event deleted successfully"})
+}
 
-func DeleteClassEventHandler(c *gin.Context) {
+// --- CR Class Routine PDF Management Handlers ---
+func UploadClassRoutinePDFHandler(c *gin.Context) {
 	crUserIDval, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
@@ -320,23 +334,85 @@ func DeleteClassEventHandler(c *gin.Context) {
 		return
 	}
 
-	eventIDStr := c.Param("eventId")
-	eventID, err := strconv.Atoi(eventIDStr)
+	file, fileHeader, err := c.Request.FormFile("routine_pdf")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Event ID in path: " + eventIDStr})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "PDF routine file not provided or invalid: " + err.Error()})
+		return
+	}
+	defer file.Close()
+
+	if !strings.HasSuffix(strings.ToLower(fileHeader.Filename), ".pdf") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only PDF files are accepted for routines."})
+		return
+	}
+	if fileHeader.Size > (5 * 1024 * 1024) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("File size exceeds limit of 5MB. Provided: %.2f MB", float64(fileHeader.Size)/(1024*1024))})
 		return
 	}
 
-	err = services.DeleteClassEvent(eventID, classID, crUserID)
+	routineMeta, err := services.UploadClassRoutinePDF(classID, crUserID, file, fileHeader)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "not authorized") {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		} else if strings.Contains(strings.ToLower(err.Error()), "not found") || strings.Contains(strings.ToLower(err.Error()), "does not belong to class") {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found or does not belong to the specified class."})
+		} else if strings.Contains(strings.ToLower(err.Error()), "invalid file type") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete class event: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload class routine: " + err.Error()})
 		}
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Class event deleted successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Class routine uploaded successfully (storage STUBBED).", "routine": routineMeta})
+}
+
+func GetClassRoutinePDFHandler(c *gin.Context) {
+	classIDStr := c.Param("classId")
+	classID, err := strconv.Atoi(classIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
+		return
+	}
+
+	routineMeta, err := services.GetClassRoutineByClassID(classID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve class routine: " + err.Error()})
+		return
+	}
+	if routineMeta == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No routine PDF found for this class."})
+		return
+	}
+	c.JSON(http.StatusOK, routineMeta)
+}
+
+func DeleteClassRoutinePDFHandler(c *gin.Context) {
+	crUserIDval, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+	crUserID, err := uuid.Parse(crUserIDval.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid CR User ID in token"})
+		return
+	}
+
+	classIDStr := c.Param("classId")
+	classID, err := strconv.Atoi(classIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Class ID in path: " + classIDStr})
+		return
+	}
+
+	err = services.DeleteClassRoutine(classID, crUserID)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not authorized") {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else if strings.Contains(strings.ToLower(err.Error()), "not found") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Routine not found or does not belong to class."})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete class routine: " + err.Error()})
+		}
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Class routine deleted successfully (metadata only, storage STUBBED)."})
 }

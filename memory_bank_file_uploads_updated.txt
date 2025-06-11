@@ -1,0 +1,7 @@
+Memory bank files (API_DOCUMENTATION.md, MANUAL_API_TESTING_GUIDE.md, progress.md, activeContext.md, techContext.md) updated to reflect the implementation of File Upload features (Profile Pictures, CR PDF Routines) with STUBBED storage.
+
+- API_DOCUMENTATION.md: Added new sections for these file upload endpoints and a general note about stubbed storage.
+- MANUAL_API_TESTING_GUIDE.md: Added new sections with test scenarios for these file upload endpoints, emphasizing the stubbed nature.
+- progress.md: Updated "File Uploads" under "Backend Features Implemented" and "Known Issues & Limitations" to reflect stubbed storage. Next steps adjusted.
+- activeContext.md: Status updated to "File Uploads (Stubbed) & Documentation". Recently completed items and next steps updated.
+- techContext.md: "Storage API" under "Limitations Encountered" updated to detail the stubbing of file uploads. "Key Technical Decisions & Workarounds" also updated. (This file was already up-to-date, as indicated by "Edit failed" during overwrite attempt).

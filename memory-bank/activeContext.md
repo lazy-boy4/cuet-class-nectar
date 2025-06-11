@@ -1,46 +1,37 @@
 # Current Development Context - CUET ClassNectar
 
-## Status: Backend - Global Search Feature Implementation Complete
+## Status: Backend Phase 2 - File Uploads (Stubbed) & Documentation
 
-The backend API for the Global Search feature has been implemented. This includes the service logic to query multiple entities, the API handler, and the route.
+Work on implementing file upload APIs (profile pictures, CR PDF routines) is complete. However, due to persistent issues with the `nedpals/supabase-go` Storage API, the actual file storage mechanism is **STUBBED**. The backend generates dummy URLs and updates database metadata accordingly, but no files are physically saved to Supabase Storage via these Go backend APIs.
 
 ## Recently Completed
-- ✅ **Global Search Backend**:
-    - Defined searchable entities and fields.
-    - Designed a common search result structure.
-    - Implemented `GlobalSearch` service (queries Users, Courses, Classes, Departments, Notices, Class Events using ILIKE).
-    - Created `GlobalSearchHandler`.
-    - Added `GET /api/search` route.
-- ✅ RLS Policy Generation (from previous phase).
-- ✅ Core Admin, Teacher, Student, CR features (from previous phase).
+- ✅ **Profile Picture Upload API**: Endpoint and DB update logic for user profile pictures (stubbed storage).
+- ✅ **CR PDF Routine Upload API**: Endpoints for CRs to "upload", view metadata, and delete metadata for class routines (stubbed storage).
+- ✅ Global Search Backend implementation.
+- ✅ RLS Policy Generation script.
+- ✅ Core Admin, Teacher, Student, CR features.
 
-## Current Focus: Finalizing Global Search Implementation
-- **Current Task**: Updating API documentation and Memory Bank files (`progress.md`, `activeContext.md`) to include the new Global Search feature.
-  - `progress.md` has been updated.
-  - `activeContext.md` is being updated now.
+## Current Focus: Updating Documentation & Memory Bank for File Uploads
+- **Current Task**: Updating API documentation and all Memory Bank files to reflect the implementation and stubbed nature of file uploads.
+  - `API_DOCUMENTATION.md` updated.
+  - `MANUAL_API_TESTING_GUIDE.md` updated.
+  - `progress.md` updated.
+  - `activeContext.md` being updated now.
+  - `techContext.md` to be updated.
 
 ## Next Immediate Steps
-1.  **Write Unit Test Structures for Search Service**.
-2.  **Update Manual Testing Guide** to include scenarios for the Global Search API.
-3.  **Submit Global Search Feature** implementation.
+1.  **Update `techContext.md`** regarding file upload stubbing.
+2.  **Write Unit Test Structures for File Upload Services**.
+3.  **Submit File Upload Implementation** (current phase of work).
 
-## Following Global Search Completion (Overall Project Next Steps):
-1.  **Implement File Uploads (Revisit/Workaround)**:
-    *   CR PDF Routine Uploads.
-    *   Profile Picture Uploads (attempt to make actual storage work).
-    *   Investigate alternatives if `nedpals/supabase-go` storage client remains problematic.
-2.  **Apply and Test RLS Policies**:
-    *   User (manual step) to apply the generated `rls_policies.sql`.
-    *   Backend developer to assist in API-based testing of RLS.
-3.  **Backend API Testing (Full Execution)**:
-    *   Flesh out and run unit tests (requires mocking strategy).
-    *   Execute comprehensive integration testing based on the manual guide.
-4.  **Frontend Integration Support**.
+## Following This (Overall Project Next Steps):
+1.  **Apply and Test RLS Policies** (Manual step by user, then backend validation).
+2.  **Backend API Testing (Full Execution)**: Flesh out and run unit tests, execute integration test plan.
+3.  **Frontend Integration Support**.
+4.  **Investigate File Storage Solutions**: If stubbed file uploads are insufficient, dedicate effort to finding a working solution for Supabase Storage (e.g., direct HTTP, presigned URLs, alternative library).
 5.  **Final Review and Submission of Project Phase**.
 
 ## Key Considerations & Challenges (Ongoing)
-- **Supabase Go Library (`nedpals/supabase-go@v0.5.0`) Limitations**:
-    - Admin Auth operations for `auth.users` are not supported.
-    - Storage API issues led to stubbed file uploads.
-    - Query ordering issues.
+- **File Storage Workaround**: The current stubbed file upload is a significant limitation.
+- **Supabase Go Library (`nedpals/supabase-go@v0.5.0`) Limitations**: Admin Auth, Storage API, Query Ordering.
 - **Manual RLS Application & Testing**: Requires user action.

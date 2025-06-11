@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/lazy-boy4/cuet-class-nectar/internal/handlers"
-	"github.com/lazy-boy4/cuet-class-nectar/internal/services" // Added for GetUserByIDByAdmin in AuthMiddleware
+	"github.com/lazy-boy4/cuet-class-nectar/internal/services" // For GetUserByIDByAdmin in AuthMiddleware
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	// "github.com/nedpals/supabase-go" // Not directly needed in main.go
+	// "github.com/nedpals/supabase-go" // Not directly needed in main
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-// var _ *supabase.OrderOpts // Removed as it's not used and nedpals/supabase-go not directly imported
+// var _ *supabase.OrderOpts // Removed
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -39,36 +39,26 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		// Get user from token
-		authUser, err := client.Auth.User(context.Background(), accessToken)
+		user, err := client.Auth.User(context.Background(), accessToken)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token: " + err.Error()})
 			c.Abort()
 			return
 		}
-		if authUser == nil || authUser.ID == "" {
+		if user == nil || user.ID == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token valid but no user found or user ID is empty"})
 			c.Abort()
 			return
 		}
-
-		c.Set("userID", authUser.ID)
-		c.Set("userEmail", authUser.Email)
-
-		// Fetch user role from public.users table and set it in context
-		// This is useful for downstream middlewares (AdminRequired, TeacherRequired, CRRequired)
-		// and handlers that might need the role without re-fetching.
-		dbUser, errRole := services.GetUserByIDByAdmin(authUser.ID) // authUser.ID is string (UUID)
+		c.Set("userID", user.ID)
+		c.Set("userEmail", user.Email)
+		dbUser, errRole := services.GetUserByIDByAdmin(user.ID)
 		if errRole == nil && dbUser != nil {
 			c.Set("userRole", dbUser.Role)
 		} else {
-			// Log the error but don't necessarily abort; RLS will still apply.
-			// Role-specific middlewares will fail if role is not correctly set or fetched by them.
-			fmt.Printf("Warning: Could not fetch user role in AuthMiddleware for user %s: %v\n", authUser.ID, errRole)
-			// Set a default or empty role if not found, so c.Get("userRole") doesn't panic if called.
+			fmt.Printf("Warning: Could not fetch user role in AuthMiddleware for user %s: %v\n", user.ID, errRole)
 			c.Set("userRole", "")
-		}
+		} // Set empty role if fetch fails
 		c.Next()
 	}
 }
@@ -76,7 +66,7 @@ func AuthMiddleware() gin.HandlerFunc {
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found.")
-	} // Simplified log
+	}
 	if err := sbClient.InitSupabaseClient(); err != nil {
 		log.Fatalf("Failed to initialize Supabase client: %v", err)
 	}
@@ -202,6 +192,10 @@ func main() {
 				crClassSpecificRoutes.POST("/events", handlers.CreateClassEventHandler)
 				crClassSpecificRoutes.PUT("/events/:eventId", handlers.UpdateClassEventHandler)
 				crClassSpecificRoutes.DELETE("/events/:eventId", handlers.DeleteClassEventHandler)
+
+				// CR PDF Routine Upload Routes
+				crClassSpecificRoutes.POST("/routine", handlers.UploadClassRoutinePDFHandler)
+				crClassSpecificRoutes.DELETE("/routine", handlers.DeleteClassRoutinePDFHandler)
 			}
 		}
 
@@ -212,13 +206,7 @@ func main() {
 			sharedApi.GET("/classes/:classId/students/:studentId/attendance", handlers.GetStudentAttendanceInClassHandler)
 			sharedApi.GET("/classes/:classId/schedule", handlers.GetScheduleByClassHandler)
 			sharedApi.GET("/classes/:classId/events", handlers.GetClassEventsHandler)
-		}
-
-		// Global Search Route
-		searchRoutes := api.Group("/search")
-		searchRoutes.Use(AuthMiddleware()) // Requires user to be logged in
-		{
-			searchRoutes.GET("", handlers.GlobalSearchHandler) // GET /api/search?q=searchTerm
+			sharedApi.GET("/classes/:classId/routine", handlers.GetClassRoutinePDFHandler)
 		}
 	}
 
@@ -227,7 +215,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Server (with global search) starting on port http://localhost:%s\n", port)
+	fmt.Printf("Server (with CR routine uploads) starting on port http://localhost:%s\n", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

@@ -13,8 +13,7 @@ type User struct {
 	Batch      *string   `json:"batch,omitempty" db:"batch"`
 	Section    *string   `json:"section,omitempty" db:"section"`
 	PictureURL *string   `json:"picture_url,omitempty" db:"picture_url"`
-	CreatedAt  string    `json:"created_at,omitempty" db:"created_at"` // Handled by Supabase
-	// LastSignInAt string `json:"last_sign_in_at,omitempty"` // From auth.users if needed
+	CreatedAt  string    `json:"created_at,omitempty" db:"created_at"`
 }
 
 // SignUpInput (already defined, used for self-registration)
@@ -22,10 +21,10 @@ type SignUpInput struct {
 	Email      string `json:"email" binding:"required,email"`
 	Password   string `json:"password" binding:"required,min=6"`
 	FullName   string `json:"full_name" binding:"required"`
-	DeptCode   string `json:"dept_code"`
-	Role       string `json:"role" binding:"required"` // student or teacher for initial signup
-	StudentID  string `json:"student_id"`
-	Batch      string `json:"batch"`
+	DeptCode   string `json:"dept_code"`               // Optional for general signup, but might be required by role
+	Role       string `json:"role" binding:"required"` // student or teacher for initial signup by user
+	StudentID  string `json:"student_id"`              // Required if role is student/cr
+	Batch      string `json:"batch"`                   // Required if role is student/cr
 	Section    string `json:"section,omitempty"`
 	PictureURL string `json:"picture_url,omitempty"`
 }
@@ -37,55 +36,44 @@ type SignInInput struct {
 }
 
 // AdminCreateUserInput is used when an admin creates a new user.
-// Password can be auto-generated or set. Email verification might be handled differently.
 type AdminCreateUserInput struct {
 	Email      string  `json:"email" binding:"required,email"`
-	Password   string  `json:"password" binding:"required,min=6"` // Admin sets initial password
+	Password   string  `json:"password" binding:"required,min=6"`
 	FullName   string  `json:"full_name" binding:"required"`
-	Role       string  `json:"role" binding:"required"` // admin, teacher, student, cr
+	Role       string  `json:"role" binding:"required"`
 	DeptCode   *string `json:"dept_code,omitempty"`
 	StudentID  *string `json:"student_id,omitempty"`
 	Batch      *string `json:"batch,omitempty"`
 	Section    *string `json:"section,omitempty"`
 	PictureURL *string `json:"picture_url,omitempty"`
-	// Add any other fields admin can set, e.g., initial department, etc.
 }
 
 // AdminUpdateUserInput is used when an admin updates a user's details.
-// Admin can typically change more fields than a user updating their own profile.
 type AdminUpdateUserInput struct {
 	FullName   *string `json:"full_name,omitempty"`
-	DeptCode   *string `json:"dept_code,omitempty"` // Use pointers to distinguish between empty and not provided
-	Role       *string `json:"role,omitempty"`      // admin, teacher, student, cr
+	DeptCode   *string `json:"dept_code,omitempty"`
+	Role       *string `json:"role,omitempty"`
 	StudentID  *string `json:"student_id,omitempty"`
 	Batch      *string `json:"batch,omitempty"`
 	Section    *string `json:"section,omitempty"`
 	PictureURL *string `json:"picture_url,omitempty"`
-	// Email and Password changes are typically handled by separate, dedicated endpoints/methods
-	// due to their sensitivity and impact (e.g., email verification, password reset flows).
-}
-
-// BulkUploadStudentData represents the expected structure for a student in a CSV.
-// Admin must ensure 'Email' corresponds to an existing auth.users entry or provide UUID.
-// If UUID is provided and valid, it will be used as the primary key for the users table.
-type BulkUploadStudentData struct {
-	UUID       string  `csv:"uuid"`        // Optional: Auth User ID (if already created)
-	Email      string  `csv:"email"`       // Required: Used to link or for new profile if UUID not given
-	FullName   string  `csv:"full_name"`   // Required
-	StudentID  string  `csv:"student_id"`  // Required (CUET ID)
-	DeptCode   string  `csv:"dept_code"`   // Required
-	Batch      string  `csv:"batch"`       // Required
-	Section    *string `csv:"section"`     // Optional
-	PictureURL *string `csv:"picture_url"` // Optional
-	// Role will be defaulted to 'student' by the service
 }
 
 // StudentProfileUpdateInput defines fields a student can update for their own profile.
 type StudentProfileUpdateInput struct {
 	FullName   *string `json:"full_name,omitempty"`
 	PictureURL *string `json:"picture_url,omitempty"`
-	Section    *string `json:"section,omitempty"` // Student might be able to update their section
-	// Password changes should be a separate endpoint.
-	// Email changes are complex (verification) and usually admin-driven or separate flow.
-	// Batch, StudentID, DeptCode are generally not student-editable.
+	Section    *string `json:"section,omitempty"`
+}
+
+// BulkUploadStudentData represents the expected structure for a student in a CSV.
+type BulkUploadStudentData struct {
+	UUID       string  `csv:"uuid"`
+	Email      string  `csv:"email"`
+	FullName   string  `csv:"full_name"`
+	StudentID  string  `csv:"student_id"`
+	DeptCode   string  `csv:"dept_code"`
+	Batch      string  `csv:"batch"`
+	Section    *string `csv:"section"`
+	PictureURL *string `csv:"picture_url"`
 }

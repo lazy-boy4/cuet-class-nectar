@@ -2,76 +2,42 @@
 
 ## Current Status (Backend Development Phase 2 Ongoing)
 - **Frontend**: Previously reported as complete. Awaiting backend integration.
-- **Backend API**: Core features implemented. Global Search added.
-  - Role-based access control (Admin, Teacher, CR, Student) is in place with JWT authentication.
-  - Most CRUD operations for key entities are functional.
-  - Some limitations exist with the current Go Supabase library (`nedpals/supabase-go@v0.5.0`) affecting Admin Auth operations and File Storage.
-- **Database**: Schema setup for core tables assumed to be in place in Supabase. RLS policy script generated, pending manual application and testing.
+- **Backend API**: Core features implemented, including Global Search. File upload APIs are structurally complete but actual storage is STUBBED.
+  - Role-based access control is in place.
+  - CRUD operations for key entities are functional.
+- **Database**: Schema setup assumed. RLS policy script generated (pending manual application).
+- **File Uploads**: API endpoints for profile pictures and CR PDF routines are implemented. Database metadata is stored. **Actual file interaction with Supabase Storage is STUBBED** due to library issues; dummy URLs are used.
 
 ## Backend Features Implemented
+(Includes Admin, Teacher, Student, CR, Shared features, and Global Search as previously detailed)
+... (Previous feature list remains largely the same, with file upload features now noted as having stubbed storage)
 
-### ✅ Core Backend & Authentication
-- **Go Project Structure**: Setup with `cmd/server`, `internal/handlers`, `internal/services`, `internal/models`.
-- **Supabase Integration**: Using `nedpals/supabase-go@v0.5.0` client.
-- **Authentication**: Signup, Login, JWT Middleware.
-- **Role-Specific Middleware**: AdminRequired, TeacherRequired, CRRequired.
-
-### ✅ Admin Features (`/api/admin/...`)
-- Department, Course, Class Management (CRUD).
-- User Profile Management (List, Get, Update; Admin Auth Create/Delete STUBBED).
-- Bulk Student Profile Upload (profiles only).
-- Teacher-Class Assignments.
-- Promote/Demote CRs.
-- Global Notice Creation.
-
-### ✅ Teacher Features (`/api/teacher/...`)
-- Notice Management (for assigned classes).
-- Attendance Management.
-- Schedule Management (Structured).
-- Teacher Dashboard data endpoint.
-
-### ✅ Student & CR Features (`/api/student/...`)
-- Student Dashboard data.
-- Student Profile Management (self).
-- Enrollment Management (Student: request, view status, list available; CR: review pending, list pending for class).
-- Class Event Management (CR: CRUD for class events).
-
-### ✅ Shared Features & Endpoints
-- Global Notices (View for all authenticated).
-- View Class Schedules, Class Events (for all authenticated).
-- View own Attendance (Student).
-- **Global Search (`GET /api/search?q=...`)**:
-  - Searches across Users, Courses, Classes, Departments, Notices, Class Events.
-  - Uses ILIKE for partial, case-insensitive matching.
-  - Results respect RLS policies.
-  - Basic result structure provided (`models.SearchResultItem`).
+### ✅ File Uploads (API & DB Logic Complete, Storage STUBBED)
+- **Profile Picture Upload**: Users can "upload" profile pictures. API updates `users.picture_url` with a dummy URL.
+- **CR PDF Class Routine Upload**: CRs can "upload" PDF routines for their classes. API creates/updates `class_routines` metadata with a dummy URL. CRs can delete this metadata. Public can view metadata.
 
 ## Known Issues & Limitations
+- **Actual File Storage**: **NOT FUNCTIONAL.** All file uploads (profile pictures, CR routines) currently use dummy URLs and do not interact with Supabase Storage due to persistent issues with the `nedpals/supabase-go` library's Storage API.
 - **Admin Auth Operations**: `nedpals/supabase-go@v0.5.0` does not support admin creation/deletion of `auth.users`. Backend functions are stubbed.
-- **File Uploads**: Profile picture uploads are stubbed (API exists, DB updates, but no actual file storage) due to `nedpals/supabase-go` Storage API issues. PDF routine uploads for CRs are not yet implemented and will face the same issue.
-- **Database Query Ordering**: The `.Order()` method for Supabase queries caused build issues. Ordering has been omitted from some list queries (including Global Search results for now).
+- **Database Query Ordering**: The `.Order()` method for Supabase queries caused build issues. Ordering has been omitted from some list queries.
 - **RLS Policies**: SQL script generated. Manual application and thorough testing are pending.
 - **Comprehensive Testing**: Unit test structures generated. Full execution and more integration tests pending.
 - **Frontend Integration**: Pending.
 
-## Next Steps (Current Plan: Global Search Implementation)
-1.  **Define Searchable Entities and Fields.** (Done)
-2.  **Design Search Result Structure.** (Done)
-3.  **Implement Search Service Logic.** (Done)
-4.  **Create Search Handler.** (Done)
-5.  **Add Search Route.** (Done)
-6.  **Update API Documentation and Memory Bank.** (In Progress - this task)
-7.  **Write Unit Test Structures for Search.**
-8.  **Provide Manual Testing Guidance for Search.**
-9.  **Final Submission for Global Search.**
+## Next Steps (Current Plan: File Uploads & Documentation)
+1.  **Resolve File Upload to Supabase Storage.** (Attempt 1 with lib resulted in STUBS. Attempts 2/3 - direct HTTP or presigned URLs - are potential future investigations if stubs are insufficient).
+2.  **Implement Profile Picture Uploads (Using Resolved STUBBED Method).** (Done)
+3.  **Implement CR PDF Routine Uploads (Using Resolved STUBBED Method).** (Done)
+4.  **Update Documentation and Memory Bank.** (In Progress - this task)
+5.  **Write Unit Test Structures for File Uploads.**
+6.  **Submit File Upload Implementation.**
 
-## Overall Next Major Steps (Post Global Search)
-1.  **Implement File Uploads (Revisit/Workaround)**: CR PDF Routines, Profile Pictures (actual storage).
-2.  **Apply and Test RLS Policies** (Manual step by user, then backend validation).
-3.  **Backend API Testing (Full Execution)**.
-4.  **Frontend Integration Support**.
-5.  **Final Review and Submission of Project Phase**.
+## Overall Next Major Steps (Post File Uploads & Docs)
+1.  **Apply and Test RLS Policies** (Manual step by user, then backend validation).
+2.  **Backend API Testing (Full Execution)**.
+3.  **Frontend Integration Support**.
+4.  **Final Review and Submission of Project Phase**.
 
 ## Last Updated
-- Date: [Current Date - to be filled by Void/Jules]
-- Status: Global Search feature backend implemented. Continuing with documentation and testing prep for search.
+- Date: [Current Date]
+- Status: File upload APIs (profile pics, CR routines) implemented with STUBBED storage. Documentation being updated.

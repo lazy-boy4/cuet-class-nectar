@@ -204,3 +204,45 @@ This guide provides a starting point. Each endpoint may have more specific edge 
     *   Check that `id`, `title`, and `subtitle` are appropriate for each result `type`.
 
 *(End of Global Search Testing Section)*
+
+
+---
+## VIII. User Profile Picture Upload (`POST /api/me/profile-picture`)
+*Requires Authenticated User Role.*
+
+1.  **Successful Upload (Stubbed)**
+    *   Log in as any user.
+    *   Send a POST request with multipart/form-data, including an image file for the field `profile_picture`.
+    *   **Expected Result**: 200 OK. Response body includes `{"message": "...", "picture_url": "dummy_url_path..."}`.
+    *   **Verification**: Check the `users` table in the database for the authenticated user. Their `picture_url` field should be updated to the dummy URL provided in the response. No actual file will be in Supabase Storage.
+2.  **Missing File**
+    *   Send POST request without the `profile_picture` file field.
+    *   **Expected Result**: 400 Bad Request.
+3.  **Invalid User (No Token)**
+    *   Send POST request without Authorization header.
+    *   **Expected Result**: 401 Unauthorized.
+
+---
+## IX. CR Class Routine PDF Upload (`/api/student/classes/:classId/routine`)
+*Requires CR Role for the specified :classId.*
+
+1.  **Upload Routine PDF (Stubbed)**
+    *   Log in as a CR. Identify a `classId` for which they are a CR.
+    *   Send a POST request to `/api/student/classes/<classId>/routine` with multipart/form-data, including a PDF file for the field `routine_pdf`.
+    *   **Expected Result**: 201 Created (or 200 OK if it's an update/upsert). Response body includes metadata of the routine, including a dummy `file_url`.
+    *   **Verification**: Check the `class_routines` table for an entry associated with `classId`. The `file_url` will be a dummy URL. No actual PDF will be in Supabase Storage.
+2.  **Upload Non-PDF File**
+    *   Send POST request with a non-PDF file (e.g., .txt, .jpg).
+    *   **Expected Result**: 400 Bad Request (due to file type validation).
+3.  **Get Routine Metadata**
+    *   As any authenticated user, send GET request to `/api/shared/classes/<classId>/routine`.
+    *   **Expected Result**: 200 OK with routine metadata (including dummy `file_url`) if one was "uploaded". 404 if no routine for that class.
+4.  **Delete Routine Metadata (Stubbed)**
+    *   As the CR for the class, send DELETE request to `/api/student/classes/<classId>/routine`.
+    *   **Expected Result**: 200 OK with success message.
+    *   **Verification**: Check `class_routines` table; entry for `classId` should be removed. (No actual file deletion from storage as it was never stored).
+5.  **Unauthorized Access**
+    *   Try to POST or DELETE routine as a regular student (not CR for that class). Expect 403 Forbidden.
+    *   Try to POST or DELETE routine as a CR for a *different* class. Expect 403 Forbidden.
+
+*(End of File Upload Testing Section)*

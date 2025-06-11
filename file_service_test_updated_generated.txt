@@ -1,0 +1,10 @@
+Placeholder test structure for file_service.go has been updated/created in internal/services/file_service_test.go.
+This file now includes placeholder test cases for:
+- UploadProfilePicture (success DB update, storage error, DB update error), keeping in mind that the underlying UploadFileToStorage is stubbed.
+- UploadClassRoutinePDF (success with stubbed storage, not a PDF, storage error, DB save error), noting that CR authorization checks within the service would also need testing if fully active.
+- GetClassRoutineByClassID (found, not found).
+- DeleteClassRoutine (success, routine not found, DB delete error), also noting CR authorization.
+
+Full implementation of these tests requires a proper mocking strategy for the Supabase client (nedpals/supabase-go) and potentially for multipart.File interactions. The generated file includes comments on these complexities.
+
+The user should adapt these placeholder tests. For the current stubbed UploadFileToStorage, tests for UploadProfilePicture and UploadClassRoutinePDF would primarily validate the logic *around* the stubbed storage call (e.g., filename generation, DB metadata updates, error propagation).
