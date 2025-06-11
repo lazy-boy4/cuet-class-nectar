@@ -1,0 +1,12 @@
+Placeholder test structure for notice_service.go has been generated in internal/services/notice_service_test.go.
+This file outlines various test cases for the service functions:
+- CreateNotice (class-specific, global)
+- GetNoticesByClass
+- GetGlobalNotices
+- GetNoticeByID (success, not found)
+- UpdateNotice (success by owner, not owner, notice not found)
+- DeleteNotice (success by owner, success by admin, not owner and not admin)
+
+Full implementation of these tests requires a proper mocking strategy for the Supabase client (nedpals/supabase-go). The generated file includes comments and conceptual notes on how mocking could be approached.
+
+The user should adapt these placeholder tests with a suitable mocking framework or by running them against a dedicated test Supabase instance to ensure the service logic is validated correctly.

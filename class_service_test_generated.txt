@@ -1,0 +1,11 @@
+Placeholder test structure for class_service.go has been generated in internal/services/class_service_test.go.
+This file outlines various test cases for the service functions:
+- CreateClass (success, invalid department ID, duplicate class code/session/section)
+- GetAllClasses (success)
+- GetClassByID (success, not found)
+- UpdateClass (success, not found)
+- DeleteClass (success)
+
+Full implementation of these tests requires a proper mocking strategy for the Supabase client (nedpals/supabase-go), which is complex and not fully implemented in this step. The generated file includes comments and conceptual notes on how mocking could be approached.
+
+The user should adapt these placeholder tests with a suitable mocking framework or by running them against a dedicated test Supabase instance to ensure the service logic is validated correctly.

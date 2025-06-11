@@ -1,0 +1,9 @@
+Placeholder test structure for dashboard_service.go has been generated in internal/services/dashboard_service_test.go.
+This file outlines various test cases for the service functions:
+- GetTeacherDashboardData (success, no assigned classes, partial data scenarios, DB errors)
+- GetStudentDashboardData (success, no enrolled classes, attendance calculation details)
+- truncateString (helper function tests for various inputs)
+
+Full implementation of these tests requires extensive mocking of the Supabase client (nedpals/supabase-go) due to the multiple database calls and potential calls to other services (like GetAllDepartments, GetAllCourses) made by the dashboard services. The generated file includes comments and conceptual notes on how mocking could be approached.
+
+The user should adapt these placeholder tests with a suitable mocking framework or by running them against a dedicated test Supabase instance with representative data to ensure the service logic (including data aggregation and calculations) is validated correctly. The test for `truncateString` can be implemented directly as it's a pure function.

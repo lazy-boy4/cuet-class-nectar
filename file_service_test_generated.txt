@@ -1,0 +1,10 @@
+Placeholder test structure for file_service.go has been generated in internal/services/file_service_test.go.
+This file outlines various test cases for the service functions:
+- TestUploadFileToStorage_StubbedBehavior: Focuses on the current stubbed implementation that bypasses actual Supabase Storage calls and constructs a dummy URL.
+- TestUploadProfilePicture_Success_DBUpdate: Tests the database update part of UploadProfilePicture, assuming UploadFileToStorage returns a URL (as per its stubbed behavior).
+- TestUploadProfilePicture_UploadFileError: Tests the scenario where UploadFileToStorage (even if stubbed) might return an error (e.g., if SUPABASE_URL is not set for the dummy URL construction).
+- TestUploadProfilePicture_DBUpdateError: Tests the scenario where the file URL is obtained (dummy URL from stub) but the subsequent database update fails.
+
+Full implementation of these tests, especially for non-stubbed behavior, would require a proper mocking strategy for the Supabase client (nedpals/supabase-go), including its Storage and DB components, and potentially mocking multipart.File for realistic input. The generated file includes comments on these complexities.
+
+The user should adapt these placeholder tests. For the current stubbed UploadFileToStorage, tests would primarily validate the dummy URL construction and error paths within that stub. Tests for UploadProfilePicture would focus on its logic assuming UploadFileToStorage behaves as stubbed (returns a URL or specific error).

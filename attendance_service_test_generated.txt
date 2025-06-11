@@ -1,0 +1,9 @@
+Placeholder test structure for attendance_service.go has been generated in internal/services/attendance_service_test.go.
+This file outlines various test cases for the service functions:
+- UpsertAttendanceRecords (new records, updating existing, empty input, DB errors)
+- GetAttendanceByClassAndDate (success with data, no records found)
+- GetAttendanceForStudentInClass (success)
+
+Full implementation of these tests requires a proper mocking strategy for the Supabase client (nedpals/supabase-go). The generated file includes comments and conceptual notes on how mocking could be approached. One test case for empty input in UpsertAttendanceRecords includes basic error checking without a full mock.
+
+The user should adapt these placeholder tests with a suitable mocking framework or by running them against a dedicated test Supabase instance to ensure the service logic is validated correctly.
