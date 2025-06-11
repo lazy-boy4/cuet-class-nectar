@@ -140,3 +140,42 @@ Base URL: `/api`
 - **Request**: Multipart form data with a file field named `profile_picture`.
 - **Success Response (200 OK)**: `{"message": "Profile picture uploaded...", "picture_url": "dummy_or_actual_url"}`.
 - **Note**: Actual file upload to Supabase Storage is currently **STUBBED** due to library issues. A dummy URL is generated and stored in the DB.
+
+
+
+---
+## 7. Global Search (`/search`)
+*Requires Authenticated User Role. All routes are prefixed with `/api`.*
+
+### GET /search
+- **Description**: Performs a global search across multiple entities (Users, Courses, Classes, Departments, Notices, Class Events).
+- **Query Parameters**:
+    - `q` (string, required): The search term.
+- **Success Response (200 OK or 207 Multi-Status if partial errors)**: `models.SearchResults`
+  ```json
+  {
+    "query": "searchTerm",
+    "items": [
+      {
+        "type": "User",
+        "id": "user-uuid-string",
+        "title": "User Full Name",
+        "subtitle": "user_role or email"
+      },
+      {
+        "type": "Course",
+        "id": "course-id-string",
+        "title": "Course Name",
+        "subtitle": "COURSE_CODE"
+      }
+      // ... other result types
+    ],
+    "count": 2
+    // "errors": "Optional: Aggregated error messages if 207"
+  }
+  ```
+- **Error Responses**:
+    - 400 Bad Request (e.g., missing 'q' parameter).
+    - 500 Internal Server Error (if major search failure).
+    - 207 Multi-Status (if some parts of the search failed but others succeeded, body includes partial results and error details).
+- **Note**: Search results are limited per entity type. RLS policies apply, so users only see data they are permitted to access.

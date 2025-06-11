@@ -1,0 +1,10 @@
+Placeholder test structure for search_service.go has been generated in internal/services/search_service_test.go.
+This file outlines various test cases for the GlobalSearch service function:
+- Success scenarios (finding users, courses, multiple types of items).
+- No results found scenario.
+- Partial error scenario (some sub-searches fail, others succeed).
+- Empty query handling (noting handler should primarily validate this).
+
+Full implementation of these tests requires extensive mocking of the Supabase client (nedpals/supabase-go) due to the multiple database queries across different entities. The generated file includes comments on this complexity. RLS implications on search results are also noted as an important consideration for actual testing.
+
+The user should adapt these placeholder tests with a suitable mocking framework or by running them against a dedicated test Supabase instance with representative data to ensure the GlobalSearch logic (including data aggregation, error handling, and RLS compliance) is validated correctly.

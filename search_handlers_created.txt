@@ -1,0 +1,10 @@
+File internal/handlers/search_handlers.go has been created with the GlobalSearchHandler.
+This handler:
+- Expects a query parameter "q".
+- Retrieves userID and userRole from the Gin context (set by AuthMiddleware).
+- Calls the services.GlobalSearch function.
+- Returns results with HTTP 200 OK.
+- If the service returns partial results along with errors, it returns HTTP 207 Multi-Status with details.
+- Handles errors like missing query parameter or user context issues.
+
+Next step is to add a route for this handler in cmd/server/main.go.

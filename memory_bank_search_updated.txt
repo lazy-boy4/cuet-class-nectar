@@ -1,0 +1,4 @@
+Memory bank files (API_DOCUMENTATION.md, progress.md, activeContext.md) updated to reflect the implementation of the Global Search feature.
+- API_DOCUMENTATION.md: Added new section for GET /api/search endpoint.
+- progress.md: Updated feature list and next steps.
+- activeContext.md: Updated current status and next steps post-Global Search.

@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	// "github.com/nedpals/supabase-go" // Not directly needed in main
+	// "github.com/nedpals/supabase-go" // Not directly needed in main.go
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-// var _ *supabase.OrderOpts // Removed
+// var _ *supabase.OrderOpts // Removed as it's not used and nedpals/supabase-go not directly imported
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -39,25 +39,35 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		user, err := client.Auth.User(context.Background(), accessToken)
+
+		// Get user from token
+		authUser, err := client.Auth.User(context.Background(), accessToken)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token: " + err.Error()})
 			c.Abort()
 			return
 		}
-		if user == nil || user.ID == "" {
+		if authUser == nil || authUser.ID == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token valid but no user found or user ID is empty"})
 			c.Abort()
 			return
 		}
-		c.Set("userID", user.ID)
-		c.Set("userEmail", user.Email)
 
-		dbUser, errRole := services.GetUserByIDByAdmin(user.ID)
+		c.Set("userID", authUser.ID)
+		c.Set("userEmail", authUser.Email)
+
+		// Fetch user role from public.users table and set it in context
+		// This is useful for downstream middlewares (AdminRequired, TeacherRequired, CRRequired)
+		// and handlers that might need the role without re-fetching.
+		dbUser, errRole := services.GetUserByIDByAdmin(authUser.ID) // authUser.ID is string (UUID)
 		if errRole == nil && dbUser != nil {
 			c.Set("userRole", dbUser.Role)
 		} else {
-			fmt.Printf("Warning: Could not fetch user role in AuthMiddleware for user %s: %v\n", user.ID, errRole)
+			// Log the error but don't necessarily abort; RLS will still apply.
+			// Role-specific middlewares will fail if role is not correctly set or fetched by them.
+			fmt.Printf("Warning: Could not fetch user role in AuthMiddleware for user %s: %v\n", authUser.ID, errRole)
+			// Set a default or empty role if not found, so c.Get("userRole") doesn't panic if called.
+			c.Set("userRole", "")
 		}
 		c.Next()
 	}
@@ -66,13 +76,13 @@ func AuthMiddleware() gin.HandlerFunc {
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found.")
-	}
+	} // Simplified log
 	if err := sbClient.InitSupabaseClient(); err != nil {
 		log.Fatalf("Failed to initialize Supabase client: %v", err)
 	}
 
 	router := gin.Default()
-	router.MaxMultipartMemory = 8 << 20 // 8 MiB, example for file uploads
+	router.MaxMultipartMemory = 8 << 20 // 8 MiB for file uploads
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -93,7 +103,6 @@ func main() {
 			authRoutes.POST("/login", handlers.SignInHandler)
 		}
 
-		// Routes for the authenticated user acting on their own data
 		meRoutes := api.Group("/me")
 		meRoutes.Use(AuthMiddleware())
 		{
@@ -204,6 +213,13 @@ func main() {
 			sharedApi.GET("/classes/:classId/schedule", handlers.GetScheduleByClassHandler)
 			sharedApi.GET("/classes/:classId/events", handlers.GetClassEventsHandler)
 		}
+
+		// Global Search Route
+		searchRoutes := api.Group("/search")
+		searchRoutes.Use(AuthMiddleware()) // Requires user to be logged in
+		{
+			searchRoutes.GET("", handlers.GlobalSearchHandler) // GET /api/search?q=searchTerm
+		}
 	}
 
 	router.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
@@ -211,7 +227,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Server (with profile pic upload) starting on port http://localhost:%s\n", port)
+	fmt.Printf("Server (with global search) starting on port http://localhost:%s\n", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

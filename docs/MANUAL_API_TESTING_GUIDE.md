@@ -155,3 +155,52 @@ Use a tool like Postman, Insomnia, or `curl`.
     *   Verify `Access-Control-Allow-Origin` and other CORS headers are present and correctly configured if frontend is on a different domain/port. (Current backend allows `*` for dev).
 
 This guide provides a starting point. Each endpoint may have more specific edge cases to consider. Remember to also check server logs for any unexpected errors during testing.
+
+
+---
+## VII. Global Search (`/api/search`)
+*Requires Authenticated User Role.*
+
+1.  **Basic Search (`GET /api/search?q=<searchTerm>`)**
+    *   Test with a searchTerm that should match a known User's `full_name` or `email`. Verify the user appears in results with `type: "User"`.
+    *   Test with a searchTerm that should match a known Course's `code` or `name`. Verify the course appears with `type: "Course"`.
+    *   Test with a searchTerm that should match a known Class's `code` or `session`. Verify with `type: "Class"`.
+    *   Test with a searchTerm that should match a known Department's `name` or `code`. Verify with `type: "Department"`.
+    *   Test with a searchTerm that should match content in a `Notice`. Verify with `type: "Notice"`.
+    *   Test with a searchTerm that should match a `ClassEvent` title or description. Verify with `type: "Class Event"`.
+
+2.  **Partial Matches**
+    *   Use partial search terms (e.g., "Comp" for "Computer Science") and verify relevant results are returned.
+
+3.  **Case Insensitivity**
+    *   Search with terms in different cases (e.g., "computer", "Computer", "COMPUTER") and ensure results are consistent (due to ILIKE).
+
+4.  **Multiple Result Types**
+    *   Use a common term that might appear in different entities (e.g., a name that's also part of a course title). Verify that results include items of different `type`.
+
+5.  **No Results**
+    *   Search with a highly specific or random term that is unlikely to exist (e.g., "XyzAbc123Qwerty"). Expect an empty `items` array and `count: 0`.
+
+6.  **Special Characters in Search Term**
+    *   Test with search terms containing spaces (e.g., "Computer Science").
+    *   Test basic special characters (e.g., "CSE-101"). (Note: Complex special characters might require URL encoding in the query parameter).
+
+7.  **Authorization / RLS Impact**
+    *   Log in as a student and search for a term you know exists in a notice for a class they are *not* enrolled in. The notice should *not* appear in their search results if RLS is correctly applied.
+    *   Log in as a teacher and search for a term in a notice for a class they *do not* teach. It should not appear.
+    *   Log in as an admin. Searches should potentially return more comprehensive results across all data (respecting RLS for sensitive user data if applicable).
+
+8.  **Missing Query Parameter**
+    *   Call `GET /api/search` (without `?q=...`). Expect 400 Bad Request with an error message about the missing 'q' parameter.
+
+9.  **Empty Query Parameter**
+    *   Call `GET /api/search?q=`. Expect 400 Bad Request or potentially empty results (depending on handler logic for empty string).
+
+10. **Performance (Subjective)**
+    *   With a reasonable amount of data, the search should return relatively quickly. (Note: Not a strict performance test, but observe for excessive delays, especially due to multiple backend queries for OR logic).
+
+11. **Result Structure Verification**
+    *   Ensure the response matches the `models.SearchResults` structure: `query`, `items: [{type, id, title, subtitle?, match_context?}]`, `count`.
+    *   Check that `id`, `title`, and `subtitle` are appropriate for each result `type`.
+
+*(End of Global Search Testing Section)*

@@ -1,0 +1,18 @@
+File internal/services/search_service.go has been created with the GlobalSearch service.
+File internal/models/search.go has been created with SearchResultItem and SearchResults models.
+
+The GlobalSearch service performs ILIKE searches across:
+- Users (full_name, email, student_id)
+- Courses (code, name)
+- Classes (code, session, section)
+- Departments (code, name)
+- Notices (content)
+- Class Events (title, description)
+
+It uses .Or() for most multi-column searches and .Filter() for single-column 'content' search in notices.
+Limit(10) is applied to each entity type.
+RLS policies are assumed to handle data visibility.
+N+1 queries exist for enriching results (e.g., class codes for notices/events).
+Errors from individual entity searches are collected and returned along with any partial results.
+
+Next steps would be to create a handler and a route for this global search functionality.

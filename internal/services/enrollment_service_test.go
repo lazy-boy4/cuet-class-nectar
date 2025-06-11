@@ -129,7 +129,6 @@ func TestCreateEnrollmentRequest_ReRequestAfterRejected(t *testing.T) {
 	t.Log("TestCreateEnrollmentRequest_ReRequestAfterRejected: Placeholder - requires Supabase client mocking.")
 }
 
-
 // --- Test Cases for GetEnrollmentsByStudentID ---
 func TestGetEnrollmentsByStudentID_Success(t *testing.T) {
 	// Arrange
@@ -164,168 +163,165 @@ func TestGetEnrollmentsByStudentID_NoneFound(t *testing.T) {
 	t.Log("TestGetEnrollmentsByStudentID_NoneFound: Placeholder.")
 }
 
-
 // --- Test Cases for ListAvailableClassesForStudent ---
 func TestListAvailableClassesForStudent_Success(t *testing.T) {
-    // Arrange
-    studentID, _ := uuid.NewRandom()
-    // Mocking:
-    // 1. Call to get existing enrollments (approved/pending) for studentID.
-    // 2. Call to get all departments (for names).
-    // 3. Call to get all classes, potentially with .NotIn(excluded_ids).
+	// Arrange
+	studentID, _ := uuid.NewRandom()
+	// Mocking:
+	// 1. Call to get existing enrollments (approved/pending) for studentID.
+	// 2. Call to get all departments (for names).
+	// 3. Call to get all classes, potentially with .NotIn(excluded_ids).
 
-    // Act
-    // summaries, err := ListAvailableClassesForStudent(studentID)
+	// Act
+	// summaries, err := ListAvailableClassesForStudent(studentID)
 
-    // Assert
-    // assert.NoError(t, err)
-    // assert.NotNil(t, summaries)
-    // // Further assertions based on mocked data:
-    // // - Ensure classes student is already approved/pending for are NOT in summaries.
-    // // - Ensure department names are correctly mapped.
-    t.Log("TestListAvailableClassesForStudent_Success: Placeholder - complex mocking required.")
+	// Assert
+	// assert.NoError(t, err)
+	// assert.NotNil(t, summaries)
+	// // Further assertions based on mocked data:
+	// // - Ensure classes student is already approved/pending for are NOT in summaries.
+	// // - Ensure department names are correctly mapped.
+	t.Log("TestListAvailableClassesForStudent_Success: Placeholder - complex mocking required.")
 }
-
 
 // --- Test Cases for ReviewEnrollmentRequest ---
 func TestReviewEnrollmentRequest_CRSuccessApprove(t *testing.T) {
-    // Arrange
-    crUserID, _ := uuid.NewRandom()
-    studentToReviewID, _ := uuid.NewRandom()
-    classID := 201
-    newStatus := "approved"
+	// Arrange
+	crUserID, _ := uuid.NewRandom()
+	studentToReviewID, _ := uuid.NewRandom()
+	classID := 201
+	newStatus := "approved"
 
-    // Mocking:
-    // 1. CR user role check (users table) -> returns 'cr'.
-    // 2. CR enrollment in classID check (enrollments table) -> returns approved enrollment for crUserID in classID.
-    // 3. Target student's pending enrollment check (enrollments table) -> returns a pending enrollment.
-    // 4. Update enrollment call (enrollments table) -> succeeds and returns updated record.
+	// Mocking:
+	// 1. CR user role check (users table) -> returns 'cr'.
+	// 2. CR enrollment in classID check (enrollments table) -> returns approved enrollment for crUserID in classID.
+	// 3. Target student's pending enrollment check (enrollments table) -> returns a pending enrollment.
+	// 4. Update enrollment call (enrollments table) -> succeeds and returns updated record.
 
-    // Act
-    // result, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, crUserID)
+	// Act
+	// result, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, crUserID)
 
-    // Assert
-    // assert.NoError(t, err)
-    // assert.NotNil(t, result)
-    // assert.Equal(t, newStatus, result.Status)
-    // assert.Equal(t, crUserID, *result.ReviewedBy) // Assuming ReviewedBy is a pointer
-    // assert.NotNil(t, result.ReviewedAt)
-    t.Log("TestReviewEnrollmentRequest_CRSuccessApprove: Placeholder - requires extensive mocking.")
+	// Assert
+	// assert.NoError(t, err)
+	// assert.NotNil(t, result)
+	// assert.Equal(t, newStatus, result.Status)
+	// assert.Equal(t, crUserID, *result.ReviewedBy) // Assuming ReviewedBy is a pointer
+	// assert.NotNil(t, result.ReviewedAt)
+	t.Log("TestReviewEnrollmentRequest_CRSuccessApprove: Placeholder - requires extensive mocking.")
 }
 
 func TestReviewEnrollmentRequest_NotACR(t *testing.T) {
-    // Arrange
-    nonCRUserID, _ := uuid.NewRandom() // User who is not a CR
-    studentToReviewID, _ := uuid.NewRandom()
-    classID := 202
-    newStatus := "approved"
-    // Mocking:
-    // 1. User role check for nonCRUserID -> returns 'student'.
+	// Arrange
+	nonCRUserID, _ := uuid.NewRandom() // User who is not a CR
+	studentToReviewID, _ := uuid.NewRandom()
+	classID := 202
+	newStatus := "approved"
+	// Mocking:
+	// 1. User role check for nonCRUserID -> returns 'student'.
 
-    // Act
-    // _, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, nonCRUserID)
+	// Act
+	// _, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, nonCRUserID)
 
-    // Assert
-    // assert.Error(t, err)
-    // assert.Contains(t, err.Error(), "is not a Class Representative")
-    t.Log("TestReviewEnrollmentRequest_NotACR: Placeholder.")
+	// Assert
+	// assert.Error(t, err)
+	// assert.Contains(t, err.Error(), "is not a Class Representative")
+	t.Log("TestReviewEnrollmentRequest_NotACR: Placeholder.")
 }
 
 func TestReviewEnrollmentRequest_CRNotEnrolledInClass(t *testing.T) {
-    // Arrange
-    crUserID, _ := uuid.NewRandom()
-    studentToReviewID, _ := uuid.NewRandom()
-    classID := 203
-    newStatus := "approved"
-    // Mocking:
-    // 1. CR user role check -> 'cr'.
-    // 2. CR enrollment in classID check -> returns no enrollment or not approved.
+	// Arrange
+	crUserID, _ := uuid.NewRandom()
+	studentToReviewID, _ := uuid.NewRandom()
+	classID := 203
+	newStatus := "approved"
+	// Mocking:
+	// 1. CR user role check -> 'cr'.
+	// 2. CR enrollment in classID check -> returns no enrollment or not approved.
 
-    // Act
-    // _, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, crUserID)
+	// Act
+	// _, err := ReviewEnrollmentRequest(classID, studentToReviewID, newStatus, crUserID)
 
-    // Assert
-    // assert.Error(t, err)
-    // assert.Contains(t, err.Error(), "not an approved member of class")
-    t.Log("TestReviewEnrollmentRequest_CRNotEnrolledInClass: Placeholder.")
+	// Assert
+	// assert.Error(t, err)
+	// assert.Contains(t, err.Error(), "not an approved member of class")
+	t.Log("TestReviewEnrollmentRequest_CRNotEnrolledInClass: Placeholder.")
 }
 
 func TestReviewEnrollmentRequest_TargetEnrollmentNotFound(t *testing.T) {
-    // Arrange
-    // ... set up CR and class ...
-    // Mocking:
-    // ... CR auth passes ...
-    // 3. Target student's pending enrollment check -> returns no record.
+	// Arrange
+	// ... set up CR and class ...
+	// Mocking:
+	// ... CR auth passes ...
+	// 3. Target student's pending enrollment check -> returns no record.
 
-    // Act & Assert
-    t.Log("TestReviewEnrollmentRequest_TargetEnrollmentNotFound: Placeholder.")
+	// Act & Assert
+	t.Log("TestReviewEnrollmentRequest_TargetEnrollmentNotFound: Placeholder.")
 }
 
 func TestReviewEnrollmentRequest_TargetEnrollmentNotPending(t *testing.T) {
-    // Arrange
-    // ... set up CR and class ...
-    // Mocking:
-    // ... CR auth passes ...
-    // 3. Target student's enrollment check -> returns an 'approved' or 'rejected' record (not 'pending').
-    // Note: Current service logic finds only 'pending'. If it finds non-pending, it says "no pending ... found".
-    // This test might be similar to TargetEnrollmentNotFound based on current service logic.
+	// Arrange
+	// ... set up CR and class ...
+	// Mocking:
+	// ... CR auth passes ...
+	// 3. Target student's enrollment check -> returns an 'approved' or 'rejected' record (not 'pending').
+	// Note: Current service logic finds only 'pending'. If it finds non-pending, it says "no pending ... found".
+	// This test might be similar to TargetEnrollmentNotFound based on current service logic.
 
-    // Act & Assert
-    t.Log("TestReviewEnrollmentRequest_TargetEnrollmentNotPending: Placeholder.")
+	// Act & Assert
+	t.Log("TestReviewEnrollmentRequest_TargetEnrollmentNotPending: Placeholder.")
 }
-
 
 // --- Test Cases for GetPendingEnrollmentsForClass ---
 func TestGetPendingEnrollmentsForClass_CRSuccess(t *testing.T) {
-    // Arrange
-    crUserID, _ := uuid.NewRandom()
-    classID := 301
-    // Mocking:
-    // 1. CR role and enrollment check -> success.
-    // 2. Fetch pending enrollments for classID -> returns a list.
-    // 3. (If enriching with student names) Fetch user details for each pending student.
+	// Arrange
+	crUserID, _ := uuid.NewRandom()
+	classID := 301
+	// Mocking:
+	// 1. CR role and enrollment check -> success.
+	// 2. Fetch pending enrollments for classID -> returns a list.
+	// 3. (If enriching with student names) Fetch user details for each pending student.
 
-    // Act
-    // results, err := GetPendingEnrollmentsForClass(classID, crUserID)
+	// Act
+	// results, err := GetPendingEnrollmentsForClass(classID, crUserID)
 
-    // Assert
-    // assert.NoError(t, err)
-    // assert.NotNil(t, results)
-    // // Check content of results based on mocked data
-    t.Log("TestGetPendingEnrollmentsForClass_CRSuccess: Placeholder.")
+	// Assert
+	// assert.NoError(t, err)
+	// assert.NotNil(t, results)
+	// // Check content of results based on mocked data
+	t.Log("TestGetPendingEnrollmentsForClass_CRSuccess: Placeholder.")
 }
 
 func TestGetPendingEnrollmentsForClass_AdminSuccess(t *testing.T) {
-    // Arrange
-    adminUserID, _ := uuid.NewRandom()
-    classID := 302
-    // Mocking:
-    // 1. Admin role check -> 'admin'.
-    // 2. Fetch pending enrollments for classID -> returns a list.
+	// Arrange
+	adminUserID, _ := uuid.NewRandom()
+	classID := 302
+	// Mocking:
+	// 1. Admin role check -> 'admin'.
+	// 2. Fetch pending enrollments for classID -> returns a list.
 
-    // Act
-    // results, err := GetPendingEnrollmentsForClass(classID, adminUserID)
+	// Act
+	// results, err := GetPendingEnrollmentsForClass(classID, adminUserID)
 
-    // Assert
-    // assert.NoError(t, err)
-    // assert.NotNil(t, results)
-    t.Log("TestGetPendingEnrollmentsForClass_AdminSuccess: Placeholder.")
+	// Assert
+	// assert.NoError(t, err)
+	// assert.NotNil(t, results)
+	t.Log("TestGetPendingEnrollmentsForClass_AdminSuccess: Placeholder.")
 }
 
 func TestGetPendingEnrollmentsForClass_UnauthorizedUser(t *testing.T) {
-    // Arrange
-    studentUserID, _ := uuid.NewRandom() // A regular student
-    classID := 303
-    // Mocking:
-    // 1. User role check for studentUserID -> 'student'.
+	// Arrange
+	studentUserID, _ := uuid.NewRandom() // A regular student
+	classID := 303
+	// Mocking:
+	// 1. User role check for studentUserID -> 'student'.
 
-    // Act
-    // _, err := GetPendingEnrollmentsForClass(classID, studentUserID)
+	// Act
+	// _, err := GetPendingEnrollmentsForClass(classID, studentUserID)
 
-    // Assert
-    // assert.Error(t, err)
-    // assert.Contains(t, err.Error(), "not authorized to view pending enrollments")
-    t.Log("TestGetPendingEnrollmentsForClass_UnauthorizedUser: Placeholder.")
+	// Assert
+	// assert.Error(t, err)
+	// assert.Contains(t, err.Error(), "not authorized to view pending enrollments")
+	t.Log("TestGetPendingEnrollmentsForClass_UnauthorizedUser: Placeholder.")
 }
 
 // Note: To run these tests effectively, you would typically:
