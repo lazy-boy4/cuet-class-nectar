@@ -1,93 +1,104 @@
-
 # Project Progress - CUET ClassNectar
 
-## Current Status (Latest Update)
-- **Frontend Complete**: Full implementation of all requested features with React, TypeScript, Vite, and ShadCN components
-- **Backend Integration**: Connected to Supabase with project ID and ready for backend development
-- **Role-Based Access**: Complete role-based navigation and protected routes for admin, teacher, and student roles
-- **Mock Data**: Comprehensive mock data integration for all features, easily replaceable with real Supabase calls
-- **Dark Theme**: Consistent CUET-branded dark theme across all pages and components
+## Current Status (Backend Development Phase 1 Complete)
+- **Frontend**: Previously reported as complete (React, TypeScript, Vite, ShadCN). Awaiting backend integration.
+- **Backend API**: Core features implemented in Golang with Gin and Supabase.
+  - Role-based access control (Admin, Teacher, CR, Student) is in place with JWT authentication.
+  - Most CRUD operations for key entities are functional.
+  - Some limitations exist with the current Go Supabase library (`nedpals/supabase-go@v0.5.0`) affecting Admin Auth operations and File Storage.
+- **Database**: Schema setup for core tables assumed to be in place in Supabase. RLS policy script generated, pending manual application and testing.
 
-## Completed Features
+## Backend Features Implemented
 
-### ✅ Public Pages
-- **Landing Page (/)**: Hero section with CUET branding, features overview, CTA buttons
-- **Signup Page (/signup)**: Dual forms for students/teachers with proper validation
-- **Login Page (/login)**: Role-based authentication with redirect logic
-- **Forgot Password (/forgot-password)**: Password reset functionality
+### ✅ Core Backend & Authentication
+- **Go Project Structure**: Setup with `cmd/server`, `internal/handlers`, `internal/services`, `internal/models`.
+- **Supabase Integration**: Using `nedpals/supabase-go@v0.5.0` client.
+- **Authentication**:
+    - User Signup (`/api/auth/signup`)
+    - User Login (`/api/auth/login`) returning JWT.
+    - `AuthMiddleware` to protect routes and extract user context (ID, Email, Role).
+- **Role-Specific Middleware**:
+    - `AdminRequiredMiddleware`
+    - `TeacherRequiredMiddleware` (also allows Admins)
+    - `CRRequiredMiddleware`
 
-### ✅ Admin Features (Complete CRUD Operations)
-- **Dashboard (/admin/dashboard)**: Statistics overview with quick navigation
-- **Department Management (/admin/departments)**: Full CRUD for university departments
-- **Course Management (/admin/courses)**: Course creation and management
-- **Class Management (/admin/classes)**: Class scheduling and assignment
-- **User Management (/admin/users)**: Student and teacher management with tabs
-- **Bulk Upload (/admin/bulk-upload)**: CSV upload for batch student registration
-- **Assign Teachers (/admin/assign-teachers)**: Teacher-to-class assignment interface
-- **Promote CRs (/admin/promote-crs)**: Class Representative designation
+### ✅ Admin Features (`/api/admin/...`)
+- **Department Management**: Full CRUD for university departments.
+- **Course Management**: Full CRUD for courses.
+- **Class Management**: Full CRUD for academic classes.
+- **User Profile Management**:
+    - List all users, Get user by ID.
+    - Update any user's profile details in `public.users`.
+    - *Limitation*: Admin creation of new `auth.users` entries and deletion of `auth.users` entries via the Go backend is **NOT currently functional** due to `nedpals/supabase-go` library limitations. These actions require external tools (e.g., Supabase Dashboard). Service functions are stubbed.
+- **Bulk Student Profile Upload**:
+    - Endpoint to upload CSV for populating `public.users` data for students.
+    - Does not create `auth.users` entries (see limitation above).
+- **Teacher-Class Assignments**: Assign/unassign teachers to classes, list teachers for a class.
+- **Promote/Demote CRs**: Change a student's role to 'cr' or demote a 'cr' to 'student' in `public.users`.
 
-### ✅ Teacher Features
-- **Dashboard (/teacher/dashboard)**: Overview of assigned classes and quick stats
-- **Class Management (/teacher/classes/:id)**: Comprehensive class management with tabs:
-  - **Attendance Grid**: Interactive attendance marking system
-  - **Notice Management**: Post and view class notices
-  - **Schedule View**: Class schedule and routine management
+### ✅ Teacher Features (`/api/teacher/...`)
+- **Notice Management**:
+    - Create, update, delete notices for assigned classes.
+    - View notices for assigned classes.
+    - (TODO: Full validation that teacher is assigned to the class for all operations).
+- **Attendance Management**:
+    - Record/update (upsert) attendance for multiple students in a class.
+    - View attendance records by class and date (includes student names).
+- **Schedule Management (Structured)**:
+    - Create, update, delete schedule entries (day, time, course, room) for assigned classes.
+    - View schedule entries for a class.
+- **Teacher Dashboard**:
+    - Endpoint (`/api/teacher/dashboard`) providing aggregated data:
+        - Assigned classes (summary).
+        - Upcoming schedule events (simplified list).
+        - Recent class notices (summary).
 
-### ✅ Student Features  
-- **Dashboard (/student/dashboard)**: Enrollment overview, attendance tracking with charts, recent notices
-- **Profile Management (/student/profile)**: Editable profile with avatar support
-- **Class Enrollment (/student/enroll)**: Browse and enroll in available classes with filters
-- **Class Details (/student/classes/:id)**: Individual class pages with attendance, notices, and CR panel
+### ✅ Student & CR Features (`/api/student/...`)
+- **Student Dashboard**:
+    - Endpoint (`/api/student/dashboard`) providing aggregated data:
+        - Enrolled classes (summary).
+        - Recent global and class notices (summary).
+        - Basic overall attendance statistics.
+- **Student Profile Management**:
+    - View own profile (`/api/student/profile`).
+    - Update own profile (limited fields like full name, picture URL, section).
+- **Enrollment Management (Student)**:
+    - Request enrollment in a class.
+    - View own enrollment history and status.
+    - List available classes for enrollment.
+- **Enrollment Management (CR)**:
+    - View pending enrollment requests for their class(es).
+    - Approve or reject pending enrollment requests for their class(es).
+    - (CR authorization for specific class is handled in service layer).
+- **Class Event Management (CR)**:
+    - CRs can create, update, and delete class-specific events (e.g., test dates, assignment deadlines) for their class(es).
+    - View events for a class (also accessible to other roles via shared endpoint).
 
-### ✅ Shared Components
-- **Notice Board (/notices)**: Global and class-specific announcements
-- **Responsive Design**: Mobile-first design with Tailwind CSS
-- **Loading States**: Proper loading indicators and skeleton states
-- **Error Handling**: User-friendly error messages and validation
-- **Accessibility**: WCAG 2.1 compliant with proper ARIA labels
+### ✅ Shared Features (Accessible by multiple roles, usually under `/api/shared/...` or public)
+- **Global Notices**:
+    - Admins can create global notices (`/api/admin/notices/global`).
+    - Authenticated users can view global notices (`/api/shared/notices/global`).
+- **View Schedules**: Authenticated users can view class schedules (`/api/shared/classes/:classId/schedule`).
+- **View Attendance (Student Specific)**: Students can view their own attendance records for a class (`/api/shared/classes/:classId/students/:studentId/attendance`).
+- **View Class Events**: Authenticated users can view events for a class (`/api/shared/classes/:classId/events`).
 
-## Technical Implementation
+## Known Issues & Limitations
+- **Admin Auth Operations**: `nedpals/supabase-go@v0.5.0` does not support admin creation/deletion of `auth.users`. Backend functions are stubbed.
+- **File Uploads**: Profile picture uploads are stubbed (API exists, DB updates, but no actual file storage) due to `nedpals/supabase-go` Storage API issues. PDF routine uploads for CRs are not yet implemented and will face the same issue.
+- **Database Query Ordering**: The `.Order()` method for Supabase queries (via `postgrest-go/v2`) caused build issues in the environment. Ordering has been omitted from some `GetAll` type queries.
+- **RLS Policies**: SQL script for RLS policies has been generated. Manual application to the Supabase database and thorough testing are pending.
+- **Comprehensive Testing**: Unit and integration tests for the backend are pending.
+- **Frontend Integration**: Pending.
 
-### ✅ Architecture
-- **React 18 + TypeScript**: Full type safety with comprehensive interfaces
-- **Vite**: Fast development and build tooling
-- **ShadCN Components**: Consistent UI component library
-- **React Router**: Role-based routing with protected routes
-- **React Query**: Efficient data fetching and caching
-- **Mock Data System**: Structured mock data for all entities, easily replaceable
-
-### ✅ Design System
-- **Dark Theme**: CUET-branded dark mode with proper contrast ratios
-- **Responsive Grid**: Mobile-first responsive design
-- **Component Library**: Reusable, focused components under 50 lines
-- **Animation System**: Smooth transitions and loading states
-- **Icon System**: Lucide React icons throughout
-
-### ✅ Data Models & Types
-- Comprehensive TypeScript interfaces for all entities
-- Mock data covering all use cases
-- API layer structured for easy Supabase integration
-- Proper error handling and validation
-
-## Ready for Backend Integration
-The frontend is fully complete and ready for backend development. The API layer in `src/api/` is structured to easily replace mock functions with real Supabase calls. All components are built to handle real data and loading states.
-
-### Next Steps (Backend Development)
-1. **Supabase Schema Setup**: Create tables matching the TypeScript interfaces
-2. **Authentication Flow**: Implement real auth with Supabase Auth
-3. **API Integration**: Replace mock API calls with real Supabase functions
-4. **RLS Policies**: Set up Row Level Security for data protection
-5. **File Upload**: Implement profile picture and document upload
-6. **Real-time Features**: Add real-time notifications and updates
-
-## File Structure
-- **Components**: 30+ focused, reusable components
-- **Pages**: 20+ pages covering all user roles and features  
-- **API Layer**: Structured for easy backend integration
-- **Types**: Comprehensive TypeScript definitions
-- **Mock Data**: Complete dataset for development and testing
+## Next Steps (New Plan)
+1.  **Implement Remaining CR Features**: Specifically, PDF routine uploads (will be part of robust file uploads).
+2.  **Implement Robust File Uploads**: Attempt to fix/workaround Supabase Storage issues for profile pictures and PDF routines.
+3.  **Define and Apply Comprehensive RLS Policies**: Manually apply and test the generated RLS script.
+4.  **Update Memory Bank**: Currently in progress.
+5.  **Backend API Testing**: Write unit and integration tests.
+6.  **Frontend Integration Support**: Collaborate and address issues.
+7.  **Final Review and Submission**.
 
 ## Last Updated
-- Date: 2025-01-20
-- Status: Frontend Development Complete
-- Next Phase: Backend Development with Supabase
+- Date: [Current Date - to be filled by Void/Jules]
+- Status: Backend Development Phase 1 (Core API Features) Complete. Phase 2 (Uploads, RLS, Testing, Integration) starting.

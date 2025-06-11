@@ -1,0 +1,3 @@
+RLS policies SQL script has been generated in rls_policies.sql.
+Please review this script carefully and apply it manually to your Supabase database via the SQL editor or another database tool.
+Thorough testing of these policies is crucial after application to ensure they behave as expected and provide the correct level of access control for different user roles.

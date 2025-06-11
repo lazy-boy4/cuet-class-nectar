@@ -1,0 +1,11 @@
+Manual API Integration Testing Guide (MANUAL_API_TESTING_GUIDE.md) has been generated in the ./docs/ directory.
+This guide outlines key scenarios and prerequisites for manually testing the CUET ClassNectar backend API endpoints using tools like Postman or curl.
+It covers:
+- Authentication (Signup, Login)
+- Admin Endpoints (Departments, Courses, Classes, User Management, Promote/Demote CR, Bulk Upload, Class-Teacher Assignments, Global Notices)
+- Teacher Endpoints (Dashboard, Notice Management, Attendance, Schedule Management)
+- Student & CR Endpoints (Dashboard, Profile, Enrollment, CR Enrollment Review, CR Class Event Management)
+- Shared Endpoints (Global Notices, Student Attendance, Class Schedule, Class Events)
+- General API Tests (Authorization, Input Validation, Idempotency, CORS)
+
+The user is instructed to follow this guide for manual testing, ensuring the backend server is running and Supabase services are accessible with appropriate user credentials and applied RLS policies.

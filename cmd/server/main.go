@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lazy-boy4/cuet-class-nectar/internal/handlers"
+	"github.com/lazy-boy4/cuet-class-nectar/internal/services" // Added for GetUserByIDByAdmin in AuthMiddleware
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	"log"
 	"net/http"
@@ -51,24 +52,31 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 		c.Set("userID", user.ID)
 		c.Set("userEmail", user.Email)
-		// Role is fetched by AdminRequired/TeacherRequired/CRRequired middlewares themselves.
+
+		dbUser, errRole := services.GetUserByIDByAdmin(user.ID)
+		if errRole == nil && dbUser != nil {
+			c.Set("userRole", dbUser.Role)
+		} else {
+			fmt.Printf("Warning: Could not fetch user role in AuthMiddleware for user %s: %v\n", user.ID, errRole)
+		}
 		c.Next()
 	}
 }
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, relying on env variables.")
+		log.Println("No .env file found.")
 	}
 	if err := sbClient.InitSupabaseClient(); err != nil {
 		log.Fatalf("Failed to initialize Supabase client: %v", err)
 	}
 
 	router := gin.Default()
+	router.MaxMultipartMemory = 8 << 20 // 8 MiB, example for file uploads
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Pragma")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -85,15 +93,17 @@ func main() {
 			authRoutes.POST("/login", handlers.SignInHandler)
 		}
 
-		userRoutes := api.Group("/users")
+		// Routes for the authenticated user acting on their own data
+		meRoutes := api.Group("/me")
+		meRoutes.Use(AuthMiddleware())
 		{
-			userRoutes.Use(AuthMiddleware())
-			userRoutes.GET("/me", func(c *gin.Context) {
+			meRoutes.GET("", func(c *gin.Context) {
 				userID, _ := c.Get("userID")
 				userEmail, _ := c.Get("userEmail")
-				// userRole, _ := c.Get("userRole") // Role is not consistently set by AuthMiddleware alone
-				c.JSON(http.StatusOK, gin.H{"message": "Protected route: user details", "userID": userID, "email": userEmail /*, "role": userRole*/})
+				userRole, _ := c.Get("userRole")
+				c.JSON(http.StatusOK, gin.H{"userID": userID, "email": userEmail, "role": userRole})
 			})
+			meRoutes.POST("/profile-picture", handlers.UploadProfilePictureHandler)
 		}
 
 		adminRoutes := api.Group("/admin")
@@ -175,12 +185,14 @@ func main() {
 			studentApi.GET("/enrollments", handlers.GetMyEnrollmentsHandler)
 			studentApi.GET("/available-classes", handlers.ListAvailableClassesForEnrollmentHandler)
 
-			// CR specific routes for enrollment management
-			crEnrollmentRoutes := studentApi.Group("/classes/:classId/enrollments") // Path for CR actions on a class
-			crEnrollmentRoutes.Use(handlers.CRRequiredMiddleware())
+			crClassSpecificRoutes := studentApi.Group("/classes/:classId")
+			crClassSpecificRoutes.Use(handlers.CRRequiredMiddleware())
 			{
-				crEnrollmentRoutes.GET("/pending", handlers.GetPendingEnrollmentsForClassHandler)
-				crEnrollmentRoutes.POST("/review", handlers.ReviewEnrollmentRequestHandler)
+				crClassSpecificRoutes.GET("/enrollments/pending", handlers.GetPendingEnrollmentsForClassHandler)
+				crClassSpecificRoutes.POST("/enrollments/review", handlers.ReviewEnrollmentRequestHandler)
+				crClassSpecificRoutes.POST("/events", handlers.CreateClassEventHandler)
+				crClassSpecificRoutes.PUT("/events/:eventId", handlers.UpdateClassEventHandler)
+				crClassSpecificRoutes.DELETE("/events/:eventId", handlers.DeleteClassEventHandler)
 			}
 		}
 
@@ -190,6 +202,7 @@ func main() {
 			sharedApi.GET("/notices/global", handlers.GetGlobalNoticesHandler)
 			sharedApi.GET("/classes/:classId/students/:studentId/attendance", handlers.GetStudentAttendanceInClassHandler)
 			sharedApi.GET("/classes/:classId/schedule", handlers.GetScheduleByClassHandler)
+			sharedApi.GET("/classes/:classId/events", handlers.GetClassEventsHandler)
 		}
 	}
 
@@ -198,7 +211,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Server (with CR enrollment review) starting on port http://localhost:%s\n", port)
+	fmt.Printf("Server (with profile pic upload) starting on port http://localhost:%s\n", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
