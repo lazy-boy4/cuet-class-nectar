@@ -1,8 +1,9 @@
 package models
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ClassEvent represents a class-specific event like a test or assignment deadline.
@@ -23,6 +24,6 @@ type ClassEventInput struct {
 	// ClassID will usually come from path param for CR actions
 	EventType   string  `json:"event_type" binding:"required,oneof=test quiz assignment_due presentation holiday other"`
 	Title       string  `json:"title" binding:"required,min=3,max=100"`
-	Description *string `json:"description,omitempty,max=500"`
+	Description *string `json:"description,omitempty" binding:"omitempty,max=500"`
 	EventDate   string  `json:"event_date" binding:"required"` // Validate format (e.g., ISO8601 date or datetime)
 }

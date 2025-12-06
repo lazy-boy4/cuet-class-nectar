@@ -16,9 +16,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fetchEnrollments, fetchNotices, fetchAttendance } from "@/api";
+import { fetchStudentDashboard } from "@/api/student"; // Use the new function
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { mockClasses } from "@/api/mockData/classes";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -45,12 +44,18 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Combine all fetches into one via the dashboard endpoint
+  const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } = useQuery({
+    queryKey: ["studentDashboard"],
+    queryFn: fetchStudentDashboard,
+    retry: 1,
+  });
 
   useEffect(() => {
     document.title = "Student Dashboard - CUET Class Management System";
 
-    const fetchUserProfile = async () => {
+    const checkAuth = () => {
       const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
       const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
 
@@ -58,6 +63,21 @@ const StudentDashboard = () => {
         navigate("/login");
         return;
       }
+
+      // We can optionally fetch full profile here if needed, or rely on dashboard data if it included user info
+      // For now, let's keep the user profile fetch separate or minimal if needed, 
+      // but `dashboard_service` doesn't return User Object. 
+      // So we keep the profile fetch logic or rely on what we have.
+      // Let's keep the existing profile fetch for specific user details like name/dept.
+    };
+    checkAuth();
+  }, [navigate]);
+
+  // Fetch full profile for the Welcome message and user details
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      if (!accessToken) return;
 
       try {
         const response = await fetch(`${API_BASE_URL}/api/student/profile`, {
@@ -67,107 +87,42 @@ const StudentDashboard = () => {
           },
         });
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            localStorage.clear();
-            sessionStorage.clear();
-            navigate("/login");
-            return;
-          }
-          throw new Error("Failed to fetch profile");
+        if (response.ok) {
+          const profileData: UserProfile = await response.json();
+          setCurrentUser(profileData);
+          // Update localStorage with fresh data
+          const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+          storage.setItem("userProfile", JSON.stringify({
+            name: profileData.full_name,
+            picture: "", // We might want to fix this to use the real pictureURL if available
+          }));
         }
-
-        const profileData: UserProfile = await response.json();
-        setCurrentUser(profileData);
-
-        // Update localStorage with fresh data
-        const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
-        storage.setItem("userProfile", JSON.stringify({
-          name: profileData.full_name,
-          picture: "",
-        }));
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile. Please try logging in again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
       }
     };
-
     fetchUserProfile();
-  }, [navigate, toast]);
+  }, []);
 
-  const { data: enrollments = [] } = useQuery({
-    queryKey: ["studentEnrollments", currentUser?.id],
-    queryFn: () => fetchEnrollments(currentUser?.id),
-    enabled: !!currentUser,
-  });
+  if (dashboardError) {
+    // toast({ title: "Error", description: "Failed to load dashboard data", variant: "destructive" });
+  }
 
-  const { data: notices = [] } = useQuery({
-    queryKey: ["studentNotices"],
-    queryFn: () => fetchNotices(),
-    enabled: !!currentUser,
-  });
+  const enrolledClasses = dashboardData?.enrolled_classes || [];
+  const recentNotices = dashboardData?.recent_notices || [];
+  const attendanceStatsData = dashboardData?.attendance_stats || { total_classes: 0, total_attended: 0, overall_percentage: 0 };
 
-  const enrolledClassIds = enrollments
-    .filter(e => e.status === "approved")
-    .map(e => e.classId);
-
-  const enrolledClasses = mockClasses.filter(c =>
-    enrolledClassIds.includes(c.id)
-  );
-
-  const { data: attendanceData = [] } = useQuery({
-    queryKey: ["studentAttendance", currentUser?.id, enrolledClassIds],
-    queryFn: async () => {
-      if (!currentUser || !enrolledClassIds.length) return [];
-
-      const allAttendance = [];
-      for (const classId of enrolledClassIds) {
-        const classAttendance = await fetchAttendance(classId);
-        allAttendance.push(...classAttendance.filter(a => a.studentId === currentUser.id));
-      }
-      return allAttendance;
-    },
-    enabled: !!currentUser && enrolledClassIds.length > 0,
-  });
-
-  const calculateAttendanceStats = (): AttendanceStats => {
-    const present = attendanceData.filter(a => a.status === "present").length;
-    const absent = attendanceData.filter(a => a.status === "absent").length;
-    const late = attendanceData.filter(a => a.status === "late").length;
-    const total = present + absent + late;
-
-    return {
-      present,
-      absent,
-      late,
-      total,
-      percentage: total > 0 ? Math.round((present + late * 0.5) / total * 100) : 0
-    };
-  };
-
-  const attendanceStats = calculateAttendanceStats();
+  // Calculate stats for Pie Chart
+  // Backend returns total and attended. We can infer absent/late roughly or just show Present vs Absent
+  // If backend only gives overall stats, we'll simplify the chart.
+  // The backend struct: { TotalClasses, TotalAttended, OverallPercentage }
+  const presentCount = attendanceStatsData.total_attended;
+  const absentCount = attendanceStatsData.total_classes - attendanceStatsData.total_attended;
 
   const pieData = [
-    { name: "Present", value: attendanceStats.present, color: "#10b981" },
-    { name: "Late", value: attendanceStats.late, color: "#f59e0b" },
-    { name: "Absent", value: attendanceStats.absent, color: "#ef4444" },
+    { name: "Present/Late", value: presentCount, color: "#10b981" },
+    { name: "Absent", value: absentCount, color: "#ef4444" },
   ].filter(item => item.value > 0);
-
-  const recentNotices = notices
-    .filter(notice =>
-      notice.isGlobal ||
-      (notice.classId && enrolledClassIds.includes(notice.classId))
-    )
-    .sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 3);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -188,7 +143,9 @@ const StudentDashboard = () => {
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Enrolled Classes</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {enrolledClasses.length === 0 ? (
+              {isDashboardLoading ? (
+                <p className="text-white/50">Loading classes...</p>
+              ) : enrolledClasses.length === 0 ? (
                 <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <BookOpen className="mb-2 h-12 w-12 text-white/30" />
@@ -205,25 +162,22 @@ const StudentDashboard = () => {
                   </CardContent>
                 </Card>
               ) : (
-                enrolledClasses.map((cls) => (
+                enrolledClasses.map((cls: any) => (
                   <Card
                     key={cls.id}
                     className="border-white/10 bg-white/5 hover:bg-white/[0.07] transition-all duration-300"
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg text-white">
-                        {cls.courseCode}: {cls.courseName}
+                        {cls.code}: {cls.session}
                       </CardTitle>
                       <CardDescription>
-                        Section {cls.section} • {cls.session}
+                        Section {cls.section}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pb-2">
                       <p className="text-sm text-white/70">
-                        Instructor: {cls.teacherName || "Not assigned"}
-                      </p>
-                      <p className="text-sm text-white/70">
-                        Department: {cls.departmentCode}
+                        Department: {cls.department_name || cls.dept_id}
                       </p>
                     </CardContent>
                     <CardFooter>
@@ -273,29 +227,23 @@ const StudentDashboard = () => {
                         </ResponsiveContainer>
                       </div>
                       <p className="mt-2 text-2xl font-bold text-white">
-                        {attendanceStats.percentage}%
+                        {Math.round(attendanceStatsData.overall_percentage || 0)}%
                       </p>
                       <p className="text-sm text-white/70">Overall Attendance</p>
                     </div>
                   </div>
 
                   <div className="md:col-span-2 p-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="rounded-lg bg-green-500/10 p-3 text-center">
                         <p className="text-2xl font-bold text-green-400">
-                          {attendanceStats.present}
+                          {presentCount}
                         </p>
-                        <p className="text-sm text-green-400/80">Present</p>
-                      </div>
-                      <div className="rounded-lg bg-yellow-500/10 p-3 text-center">
-                        <p className="text-2xl font-bold text-yellow-400">
-                          {attendanceStats.late}
-                        </p>
-                        <p className="text-sm text-yellow-400/80">Late</p>
+                        <p className="text-sm text-green-400/80">Present/Late</p>
                       </div>
                       <div className="rounded-lg bg-red-500/10 p-3 text-center">
                         <p className="text-2xl font-bold text-red-400">
-                          {attendanceStats.absent}
+                          {absentCount}
                         </p>
                         <p className="text-sm text-red-400/80">Absent</p>
                       </div>
@@ -303,15 +251,15 @@ const StudentDashboard = () => {
 
                     <div className="mt-4">
                       <p className="text-sm text-white/70">
-                        Total Classes: <span className="text-white">{attendanceStats.total}</span>
+                        Total Classes: <span className="text-white">{attendanceStatsData.total_classes}</span>
                       </p>
 
                       <div className="mt-3">
-                        {attendanceStats.total === 0 ? (
+                        {attendanceStatsData.total_classes === 0 ? (
                           <p className="text-white/70">
                             No attendance records found.
                           </p>
-                        ) : attendanceStats.percentage < 75 ? (
+                        ) : attendanceStatsData.overall_percentage < 75 ? (
                           <div className="rounded-md bg-red-500/10 p-2 text-sm text-red-400">
                             Your attendance is below the required 75%. Please improve your attendance.
                           </div>
@@ -385,7 +333,7 @@ const StudentDashboard = () => {
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
-                  onClick={() => window.open("/lovable-uploads/3fcc6e15-16d0-4bdb-8051-bd5314406f6c.png", "_blank")}
+                  onClick={() => navigate("/student/schedule")}
                 >
                   <Clock className="mr-3 h-5 w-5 text-green-400" />
                   <div>
@@ -408,33 +356,31 @@ const StudentDashboard = () => {
                 <div className="flex flex-col items-center justify-center p-6">
                   <Bell className="mb-2 h-8 w-8 text-white/30" />
                   <p className="text-sm text-white/70">No notices available</p>
+                  {isDashboardLoading && <p className="text-xs text-white/50">Loading matches...</p>}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 divide-y divide-white/10">
-                  {recentNotices.map((notice) => (
+                  {recentNotices.map((notice: any) => (
                     <div key={notice.id} className="rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
                       <div className="mb-2 flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-white">{notice.title}</h4>
-                        <span className="text-xs text-white/60">{formatDate(notice.createdAt)}</span>
+                        <h4 className="text-sm font-semibold text-white">{notice.content}</h4>
+                        <span className="text-xs text-white/60">{formatDate(notice.created_at)}</span>
                       </div>
-                      {notice.isGlobal ? (
+                      {/* Note: notice object from backend might summary content in 'content' field and full title/content might differ. 
+                           The dashboard notice structure is simple: id, content, created_at, class_code 
+                           We can determine type by checking class_code */}
+                      {notice.class_code ? (
+                        <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-400">
+                          {notice.class_code}
+                        </Badge>
+                      ) : (
                         <Badge variant="outline" className="mb-2 bg-blue-500/10 text-blue-400">
                           Global
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="mb-2 bg-green-500/10 text-green-400">
-                          {notice.className || notice.classId || "Class Notice"}
-                        </Badge>
                       )}
+
                       <p className="mb-2 line-clamp-2 text-sm text-white/70">{notice.content}</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 p-0 text-xs text-blue-400 hover:text-blue-300"
-                        asChild
-                      >
-                        <Link to="/notices">Read more</Link>
-                      </Button>
+                      {/* Read more link could go to /notices */}
                     </div>
                   ))}
                 </div>

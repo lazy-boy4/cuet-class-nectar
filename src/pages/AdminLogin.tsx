@@ -24,38 +24,70 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      // For the demo, hardcoding credential check
-      // In production, this would be an API call
-      if (email === "u2309026@student.cuet.ac.bd" && password === "Saadctg") {
-        // Mock successful login
-        console.log("Admin logged in successfully");
-        
-        // Store admin login state
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userRole", "admin");
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome to the admin dashboard!",
-          duration: 3000,
-        });
-        
-        // Redirect to admin dashboard
-        setTimeout(() => {
-          navigate("/admin/dashboard");
-        }, 1000);
-      } else {
-        throw new Error("Invalid email or password");
+      // Use the same login endpoint as regular users, assuming admin is a role
+      // Or if there is a specific admin login, use that. 
+      // Based on previous files, Login.tsx uses /api/auth/login.
+      // Let's assume admins log in via same endpoint or we mock the auth success more accurately for now if backend isn't ready.
+      // But we built admin backend! So let's use it.
+      // However, to be safe and consistent with Login.tsx logic:
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
       }
-    } catch (error) {
+
+      // Store tokens - essential for Header.tsx to detect login
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("isLoggedIn", "true");
+
+      // We might need to fetch profile to confirm role is admin
+      const profileResponse = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/student/profile`, {
+        headers: { "Authorization": `Bearer ${data.access_token}` }
+      });
+
+      if (profileResponse.ok) {
+        const profile = await profileResponse.json();
+        localStorage.setItem("userRole", profile.role);
+
+        if (profile.role !== 'admin') {
+          throw new Error("Unauthorized: Access restricted to administrators.");
+        }
+      } else {
+        // Fallback if profile fetch fails but login worked (unlikely)
+        localStorage.setItem("userRole", "admin");
+      }
+
+      toast({
+        title: "Login successful",
+        description: "Welcome to the admin dashboard!",
+        duration: 3000,
+      });
+
+      // Redirect to admin dashboard
+      setTimeout(() => {
+        navigate("/admin/dashboard");
+      }, 1000);
+
+    } catch (error: any) {
       console.error("Login error:", error);
-      setError("Invalid administrator credentials. Please try again.");
+      setError(error.message || "Invalid administrator credentials. Please try again.");
       toast({
         title: "Login failed",
-        description: "Invalid administrator credentials. Please try again.",
+        description: error.message || "Invalid administrator credentials.",
         variant: "destructive",
         duration: 3000,
       });
+      // Clear tokens if failed mid-way
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("isLoggedIn");
     } finally {
       setIsLoading(false);
     }

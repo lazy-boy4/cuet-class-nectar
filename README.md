@@ -22,7 +22,10 @@ cd cuet-class-nectar
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the backend server. 
+go run cmd/server/main.go
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
@@ -49,3 +52,4 @@ This project is built with .
 - React
 - shadcn-ui
 - Tailwind CSS
+- go

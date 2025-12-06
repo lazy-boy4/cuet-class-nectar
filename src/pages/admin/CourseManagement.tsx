@@ -1,15 +1,17 @@
+
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { mockCourses } from "@/api/mockData/courses";
-import { mockDepartments } from "@/api/mockData/departments";
+import { mockDepartments } from "@/api/mockData/departments"; // Keep for dropdown usage
 import CourseTable from "@/components/admin/CourseTable";
 import CourseForm from "@/components/admin/CourseForm";
+import ConfirmDeleteDialog from "@/components/admin/ConfirmDeleteDialog";
 import { toast } from "@/hooks/use-toast";
-import { Course, Department } from "@/types";
+import { Course } from "@/types";
 import { Link } from "react-router-dom";
+import { fetchCoursesForAdmin, createCourse, updateCourse, deleteCourse, fetchDepartmentsForAdmin } from "@/api/admin";
 
 const QuickAdminNav = () => (
   <nav className="mb-8 flex flex-wrap gap-3">
@@ -24,41 +26,75 @@ const QuickAdminNav = () => (
 );
 
 export default function CourseManagement() {
-  const [courses, setCourses] = useState(mockCourses);
   const [openForm, setOpenForm] = useState(false);
   const [editCourse, setEditCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [deleteCourseObj, setDeleteCourseObj] = useState<Course | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // Fetch courses
+  const { data: courses = [], isLoading } = useQuery({
+    queryKey: ["courses"],
+    queryFn: fetchCoursesForAdmin,
+  });
+
+  // Fetch departments for mapping name (or use mock if not available yet)
+  const { data: departments = mockDepartments } = useQuery({
+    queryKey: ["departments"],
+    queryFn: fetchDepartmentsForAdmin,
+  });
 
   const getDepartmentName = (departmentId: string | undefined, departmentCode?: string) => {
-    const dept = mockDepartments.find(d => d.id === departmentId || d.code === departmentCode);
+    // Try to find by ID first, then Code
+    const dept = departments.find(d => d.id === departmentId || d.code === departmentCode || d.code === departmentId);
     return dept ? dept.name : (departmentCode || "Unknown");
   };
 
-  const handleAddOrEditCourse = (data: Omit<Course, "id">) => {
-    setLoading(true);
-    setTimeout(() => {
-      if (editCourse) {
-        setCourses(courses.map(c =>
-          c.id === editCourse.id ? { ...editCourse, ...data } : c
-        ));
-        toast({ title: "Updated Course", description: "Course updated successfully." });
-      } else {
-        setCourses([...courses, { ...data, id: `course-${Date.now()}` }]);
-        toast({ title: "Added Course", description: "Course added successfully." });
-      }
+  const createMutation = useMutation({
+    mutationFn: createCourse,
+    onSuccess: () => {
+      toast({ title: "Added Course", description: "Course added successfully." });
       setOpenForm(false);
-      setEditCourse(null);
-      setLoading(false);
-    }, 600);
-  };
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to add course.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
 
-  const handleDelete = (course: Course) => {
-    setLoading(true);
-    setTimeout(() => {
-      setCourses(courses.filter(c => c.id !== course.id));
+  const updateMutation = useMutation({
+    mutationFn: updateCourse,
+    onSuccess: () => {
+      toast({ title: "Updated Course", description: "Course updated successfully." });
+      setOpenForm(false);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to update course.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCourse,
+    onSuccess: () => {
       toast({ title: "Deleted Course", description: "Course deleted successfully." });
-      setLoading(false);
-    }, 600);
+      setDeleteCourseObj(null);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to delete course.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const handleAddOrEditCourse = (data: Omit<Course, "id">) => {
+    if (editCourse) {
+      updateMutation.mutate({ ...data, id: editCourse.id } as Course);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
@@ -72,9 +108,9 @@ export default function CourseManagement() {
       </div>
       <CourseTable
         courses={courses}
-        loading={loading}
+        loading={isLoading}
         onEdit={course => { setEditCourse(course); setOpenForm(true); }}
-        onDelete={handleDelete}
+        onDelete={setDeleteCourseObj}
         getDepartmentName={getDepartmentName}
       />
       <CourseForm
@@ -82,8 +118,16 @@ export default function CourseManagement() {
         onOpenChange={setOpenForm}
         course={editCourse}
         onSubmit={handleAddOrEditCourse}
-        departments={mockDepartments}
-        loading={loading}
+        departments={departments}
+        loading={createMutation.isPending || updateMutation.isPending}
+      />
+      <ConfirmDeleteDialog
+        open={!!deleteCourseObj}
+        onOpenChange={(v) => !v && setDeleteCourseObj(null)}
+        title="Delete Course"
+        description={<>Are you sure you want to delete <span className="font-semibold text-white">{deleteCourseObj?.name}</span> ({deleteCourseObj?.code})? This action cannot be undone.</>}
+        onConfirm={() => deleteCourseObj && deleteMutation.mutate(deleteCourseObj.id)}
+        loading={deleteMutation.isPending}
       />
     </DashboardLayout>
   );

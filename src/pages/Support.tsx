@@ -1,12 +1,12 @@
-
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { 
-  ArrowLeft, Mail, Phone, MapPin, Clock, 
-  Send, User, MessageSquare, AlertCircle 
+import { useNavigate, Link } from "react-router-dom";
+import {
+  ArrowLeft, Mail, Phone,
+  Send, MessageSquare, MapPin, AlertCircle
 } from "lucide-react";
 
 const Support = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,7 +43,7 @@ const Support = () => {
   const supportCategories = [
     "Account Issues",
     "Class Enrollment",
-    "Attendance Problems", 
+    "Attendance Problems",
     "Technical Issues",
     "Password Reset",
     "Permission Issues",
@@ -57,13 +57,13 @@ const Support = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -77,7 +77,7 @@ const Support = () => {
               Contact Support
             </h1>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Need help? Our support team is here to assist you with any questions 
+              Need help? Our support team is here to assist you with any questions
               or issues you may have with the CUET Class Management System.
             </p>
           </div>
@@ -216,7 +216,7 @@ const Support = () => {
                       <p className="text-white/60 text-sm">Response time: 24-48 hours</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-4">
                     <Phone className="h-6 w-6 text-green-400 flex-shrink-0 mt-1" />
                     <div>
@@ -225,7 +225,7 @@ const Support = () => {
                       <p className="text-white/60 text-sm">Available: 9 AM - 5 PM (Sat-Thu)</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-4">
                     <MapPin className="h-6 w-6 text-purple-400 flex-shrink-0 mt-1" />
                     <div>
@@ -305,7 +305,7 @@ const Support = () => {
                   <div>
                     <h3 className="text-white font-semibold mb-2">Emergency Support</h3>
                     <p className="text-white/70 text-sm">
-                      For critical system issues affecting multiple users, please call our 
+                      For critical system issues affecting multiple users, please call our
                       emergency hotline immediately: <strong>+880-31-714935</strong>
                     </p>
                   </div>

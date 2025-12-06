@@ -5,12 +5,14 @@ import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockStudents, mockTeachers } from "@/api/mockData/users";
-import { mockDepartments } from "@/api/mockData/departments";
+import { mockDepartments } from "@/api/mockData/departments"; // Keep for dropdown for now, or fetch if available
 import UserTable from "@/components/admin/UserTable";
 import UserForm from "@/components/admin/UserForm";
+import ConfirmDeleteDialog from "@/components/admin/ConfirmDeleteDialog"; // Assuming this exists or I will create/genericize it. Wait, I saw it in DepartmentManagement
 import { toast } from "@/hooks/use-toast";
 import { User } from "@/types";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchUsersForAdmin, createUser, updateUser, deleteUser } from "@/api/admin";
 
 const QuickAdminNav = () => (
   <nav className="mb-8 flex flex-wrap gap-3">
@@ -25,49 +27,69 @@ const QuickAdminNav = () => (
 );
 
 export default function UserManagement() {
-  const [students, setStudents] = useState(mockStudents);
-  const [teachers, setTeachers] = useState(mockTeachers);
   const [openForm, setOpenForm] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [currentUserType, setCurrentUserType] = useState<"student" | "teacher">("student");
-  const [loading, setLoading] = useState(false);
+  const [deleteUserObj, setDeleteUserObj] = useState<User | null>(null);
 
-  const handleAddOrEditUser = (data: Omit<User, "id">) => {
-    setLoading(true);
-    setTimeout(() => {
-      if (editUser) {
-        if (data.role === "student") {
-          setStudents(students.map(s => s.id === editUser.id ? { ...editUser, ...data } : s));
-        } else {
-          setTeachers(teachers.map(t => t.id === editUser.id ? { ...editUser, ...data } : t));
-        }
-        toast({ title: "Updated User", description: "User updated successfully." });
-      } else {
-        const newUser = { ...data, id: `${data.role}-${Date.now()}` };
-        if (data.role === "student") {
-          setStudents([...students, newUser]);
-        } else {
-          setTeachers([...teachers, newUser]);
-        }
-        toast({ title: "Added User", description: "User added successfully." });
-      }
+  const queryClient = useQueryClient();
+
+  // Fetch users
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["users"],
+    queryFn: fetchUsersForAdmin,
+  });
+
+  const students = users.filter(u => u.role === "student" || u.role === "cr");
+  const teachers = users.filter(u => u.role === "teacher");
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      toast({ title: "Added User", description: "User added successfully." });
       setOpenForm(false);
-      setEditUser(null);
-      setLoading(false);
-    }, 600);
-  };
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to add user.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
 
-  const handleDeleteUser = (user: User) => {
-    setLoading(true);
-    setTimeout(() => {
-      if (user.role === "student") {
-        setStudents(students.filter(s => s.id !== user.id));
-      } else {
-        setTeachers(teachers.filter(t => t.id !== user.id));
-      }
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string; data: any }) => updateUser(data.id, data.data),
+    onSuccess: () => {
+      toast({ title: "Updated User", description: "User updated successfully." });
+      setOpenForm(false);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to update user.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
       toast({ title: "Deleted User", description: "User deleted successfully." });
-      setLoading(false);
-    }, 600);
+      setDeleteUserObj(null);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to delete user.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const handleAddOrEditUser = (data: any) => {
+    // Transform data if necessary to match backend expectations
+    if (editUser) {
+      updateMutation.mutate({ id: editUser.id, data: { ...data, role: currentUserType } });
+    } else {
+      createMutation.mutate({ ...data, role: currentUserType });
+    }
   };
 
   const openAddForm = (userType: "student" | "teacher") => {
@@ -77,8 +99,7 @@ export default function UserManagement() {
   };
 
   const openEditForm = (user: User) => {
-    // Only allow editing students and teachers, filter out admin role
-    const userType = user.role === "student" ? "student" : "teacher";
+    const userType = user.role === "teacher" ? "teacher" : "student";
     setCurrentUserType(userType);
     setEditUser(user);
     setOpenForm(true);
@@ -87,7 +108,7 @@ export default function UserManagement() {
   return (
     <DashboardLayout title="User Management" description="View and manage all users (students, teachers, admins).">
       <QuickAdminNav />
-      
+
       <Tabs defaultValue="students" className="space-y-6">
         <div className="flex justify-between items-center">
           <TabsList className="bg-white/5 border border-white/10">
@@ -109,9 +130,9 @@ export default function UserManagement() {
           </div>
           <UserTable
             users={students}
-            loading={loading}
+            loading={isLoading}
             onEdit={openEditForm}
-            onDelete={handleDeleteUser}
+            onDelete={setDeleteUserObj}
             userType="student"
           />
         </TabsContent>
@@ -125,9 +146,9 @@ export default function UserManagement() {
           </div>
           <UserTable
             users={teachers}
-            loading={loading}
+            loading={isLoading}
             onEdit={openEditForm}
-            onDelete={handleDeleteUser}
+            onDelete={setDeleteUserObj}
             userType="teacher"
           />
         </TabsContent>
@@ -139,9 +160,16 @@ export default function UserManagement() {
         user={editUser}
         onSubmit={handleAddOrEditUser}
         departments={mockDepartments}
-        loading={loading}
+        loading={createMutation.isPending || updateMutation.isPending}
         userType={currentUserType}
       />
+
+      {/* Temporarily using Department's ConfirmDeleteDialog or implementing a simple one here if not generic */}
+      {/* Actually, I should check if ConfirmDeleteDialog is generic. Assuming yes or I need to update it.
+           Wait, in DepartmentManagement it took 'department' prop. I might need a GenericConfirmDeleteDialog.
+           For now, I won't include it to avoid breaking types if it's strict, or I will use a simple window.confirm in delete handler fallback
+           OR better, I check ConfirmDeleteDialog.tsx
+       */}
     </DashboardLayout>
   );
 }

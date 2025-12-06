@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/lazy-boy4/cuet-class-nectar/internal/handlers"
-	"github.com/lazy-boy4/cuet-class-nectar/internal/services" // For GetUserByIDByAdmin in AuthMiddleware
-	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/lazy-boy4/cuet-class-nectar/internal/handlers"
+	"github.com/lazy-boy4/cuet-class-nectar/internal/services" // For GetUserByIDByAdmin in AuthMiddleware
+	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
+
 	// "github.com/nedpals/supabase-go" // Not directly needed in main
 
 	"github.com/gin-gonic/gin"
@@ -183,6 +185,7 @@ func main() {
 			studentApi.POST("/enrollments/request", handlers.CreateEnrollmentRequestHandler)
 			studentApi.GET("/enrollments", handlers.GetMyEnrollmentsHandler)
 			studentApi.GET("/available-classes", handlers.ListAvailableClassesForEnrollmentHandler)
+			studentApi.GET("/notices", handlers.GetStudentRefinedNoticesHandler) // New Route
 
 			crClassSpecificRoutes := studentApi.Group("/classes/:classId")
 			crClassSpecificRoutes.Use(handlers.CRRequiredMiddleware())

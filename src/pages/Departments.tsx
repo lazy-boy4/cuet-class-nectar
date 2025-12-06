@@ -1,9 +1,9 @@
-
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Users, BookOpen, Award } from "lucide-react";
 
 const Departments = () => {
+  const navigate = useNavigate();
   const departments = [
     {
       code: "01",
@@ -14,7 +14,7 @@ const Departments = () => {
       faculty: "45"
     },
     {
-      code: "02", 
+      code: "02",
       name: "Electrical & Electronic Engineering",
       description: "Power systems, electronics, telecommunications, and control systems.",
       established: "1968",
@@ -23,7 +23,7 @@ const Departments = () => {
     },
     {
       code: "03",
-      name: "Mechanical Engineering", 
+      name: "Mechanical Engineering",
       description: "Design, manufacturing, thermal systems, and mechanical processes.",
       established: "1968",
       students: "700+",
@@ -108,13 +108,13 @@ const Departments = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -127,7 +127,7 @@ const Departments = () => {
               Academic Departments
             </h1>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Explore our 12 specialized departments offering comprehensive engineering 
+              Explore our 12 specialized departments offering comprehensive engineering
               and technology programs designed to meet global standards.
             </p>
           </div>
@@ -145,7 +145,7 @@ const Departments = () => {
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">{dept.name}</h3>
                     <p className="text-white/70 mb-4">{dept.description}</p>
-                    
+
                     {/* Department Stats */}
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div className="text-center">

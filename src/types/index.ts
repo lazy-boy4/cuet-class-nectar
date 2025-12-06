@@ -12,7 +12,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin' | 'cr';
   department?: string;
   session?: string;
   section?: string;
@@ -86,6 +86,7 @@ export interface Notice {
   content: string;
   isGlobal?: boolean;
   classId?: string;
+  deptCode?: string; // Added for departmental notices
   className?: string;
   createdAt: string;
   authorId?: string;

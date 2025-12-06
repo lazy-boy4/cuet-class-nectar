@@ -1,17 +1,19 @@
 
+
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { mockClasses } from "@/api/mockData/classes";
-import { mockDepartments } from "@/api/mockData/departments";
-import { mockCourses } from "@/api/mockData/courses";
+import { mockDepartments } from "@/api/mockData/departments"; // fallback
+import { mockCourses } from "@/api/mockData/courses"; // fallback
 import ClassTable from "@/components/admin/ClassTable";
 import ClassForm from "@/components/admin/ClassForm";
+import ConfirmDeleteDialog from "@/components/admin/ConfirmDeleteDialog";
 import { toast } from "@/hooks/use-toast";
 import { Class } from "@/types";
 import { Link } from "react-router-dom";
+import { fetchClassesForAdmin, createClass, updateClass, deleteClass, fetchDepartmentsForAdmin, fetchCoursesForAdmin } from "@/api/admin";
 
 const QuickAdminNav = () => (
   <nav className="mb-8 flex flex-wrap gap-3">
@@ -26,51 +28,85 @@ const QuickAdminNav = () => (
 );
 
 export default function ClassManagement() {
-  const [classes, setClasses] = useState(mockClasses);
   const [openForm, setOpenForm] = useState(false);
   const [editClass, setEditClass] = useState<Class | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [deleteClassObj, setDeleteClassObj] = useState<Class | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // Fetch departments and courses for dropdowns and lookups
+  const { data: departments = mockDepartments } = useQuery({
+    queryKey: ["departments"],
+    queryFn: fetchDepartmentsForAdmin,
+  });
+
+  const { data: courses = mockCourses } = useQuery({
+    queryKey: ["courses"],
+    queryFn: fetchCoursesForAdmin,
+  });
+
+  // Fetch classes
+  const { data: classesRaw = [], isLoading } = useQuery({
+    queryKey: ["classes"],
+    queryFn: fetchClassesForAdmin,
+  });
+
+  // Enriched classes with course names if backend doesn't provide them
+  const classes = classesRaw.map(cls => {
+    const course = courses.find(c => c.id === cls.courseId);
+    return {
+      ...cls,
+      courseName: cls.courseName || course?.name,
+      courseCode: cls.courseCode || course?.code,
+    };
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createClass,
+    onSuccess: () => {
+      toast({ title: "Added Class", description: "Class added successfully." });
+      setOpenForm(false);
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to add class.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateClass,
+    onSuccess: () => {
+      toast({ title: "Updated Class", description: "Class updated successfully." });
+      setOpenForm(false);
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to update class.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteClass,
+    onSuccess: () => {
+      toast({ title: "Deleted Class", description: "Class deleted successfully." });
+      setDeleteClassObj(null);
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to delete class.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
 
   const handleAddOrEditClass = (data: Omit<Class, "id">) => {
-    setLoading(true);
-    setTimeout(() => {
-      const selectedCourse = mockCourses.find(c => c.id === data.courseId);
-      const selectedDept = mockDepartments.find(d => d.code === data.departmentCode);
-      
-      if (editClass) {
-        setClasses(classes.map(c =>
-          c.id === editClass.id ? { 
-            ...editClass, 
-            ...data,
-            courseName: selectedCourse?.name,
-            courseCode: selectedCourse?.code,
-            code: `${data.departmentCode}-${data.section}`,
-          } : c
-        ));
-        toast({ title: "Updated Class", description: "Class updated successfully." });
-      } else {
-        setClasses([...classes, { 
-          ...data, 
-          id: `class-${Date.now()}`,
-          courseName: selectedCourse?.name,
-          courseCode: selectedCourse?.code,
-          code: `${data.departmentCode}-${data.section}`,
-        }]);
-        toast({ title: "Added Class", description: "Class added successfully." });
-      }
-      setOpenForm(false);
-      setEditClass(null);
-      setLoading(false);
-    }, 600);
-  };
-
-  const handleDelete = (classItem: Class) => {
-    setLoading(true);
-    setTimeout(() => {
-      setClasses(classes.filter(c => c.id !== classItem.id));
-      toast({ title: "Deleted Class", description: "Class deleted successfully." });
-      setLoading(false);
-    }, 600);
+    if (editClass) {
+      updateMutation.mutate({ ...data, id: editClass.id } as Class);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
@@ -84,18 +120,26 @@ export default function ClassManagement() {
       </div>
       <ClassTable
         classes={classes}
-        loading={loading}
+        loading={isLoading}
         onEdit={classItem => { setEditClass(classItem); setOpenForm(true); }}
-        onDelete={handleDelete}
+        onDelete={setDeleteClassObj}
       />
       <ClassForm
         open={openForm}
         onOpenChange={setOpenForm}
         classItem={editClass}
         onSubmit={handleAddOrEditClass}
-        departments={mockDepartments}
-        courses={mockCourses}
-        loading={loading}
+        departments={departments}
+        courses={courses}
+        loading={createMutation.isPending || updateMutation.isPending}
+      />
+      <ConfirmDeleteDialog
+        open={!!deleteClassObj}
+        onOpenChange={(v) => !v && setDeleteClassObj(null)}
+        title="Delete Class"
+        description={<>Are you sure you want to delete <span className="font-semibold text-white">{deleteClassObj?.code}</span>? This action cannot be undone.</>}
+        onConfirm={() => deleteClassObj && deleteMutation.mutate(deleteClassObj.id)}
+        loading={deleteMutation.isPending}
       />
     </DashboardLayout>
   );

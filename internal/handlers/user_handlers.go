@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"github.com/lazy-boy4/cuet-class-nectar/internal/services"
 	"net/http"
+
+	"github.com/lazy-boy4/cuet-class-nectar/internal/services"
+
 	// "strings"
 
 	"github.com/gin-gonic/gin"
@@ -30,9 +32,9 @@ func UploadProfilePictureHandler(c *gin.Context) {
 	defer file.Close() // Important to close the file
 
 	// Basic validation for file size or type can be added here
-	// Example: 2MB limit
-	if fileHeader.Size > (2 * 1024 * 1024) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File size exceeds 2MB limit."})
+	// Example: 3MB limit
+	if fileHeader.Size > (3 * 1024 * 1024) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File size exceeds 3MB limit."})
 		return
 	}
 	// Example: Check content type (more robust than just extension)

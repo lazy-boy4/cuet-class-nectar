@@ -48,6 +48,78 @@ const Profile = () => {
     website: "",
   });
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image size must be less than 3MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+
+    try {
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      const response = await fetch(`${API_BASE_URL}/api/me/profile-picture`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const data = await response.json();
+
+      // Update local state
+      if (currentUser) {
+        const updatedUser = { ...currentUser, picture_url: data.picture_url };
+        setCurrentUser(updatedUser);
+
+        // Update localStorage
+        const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+        storage.setItem("userProfile", JSON.stringify({
+          name: updatedUser.full_name,
+          picture: updatedUser.picture_url
+        }));
+
+        // Trigger storage event for Header sync
+        window.dispatchEvent(new Event("storage"));
+      }
+
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload profile picture",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
@@ -244,12 +316,25 @@ const Profile = () => {
                     {currentUser.full_name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
                 <Button
                   size="sm"
                   variant="outline"
                   className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
                 >
-                  <Camera className="h-4 w-4" />
+                  {uploading ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
 

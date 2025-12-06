@@ -1,21 +1,22 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Eye, Lock, Database } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Shield, Lock, Eye, FileCheck, Database } from "lucide-react";
 
 const Privacy = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-cuet-navy">
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -38,14 +39,14 @@ const Privacy = () => {
 
           {/* Privacy Content */}
           <div className="space-y-8">
-            
+
             {/* Introduction */}
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">Introduction</h2>
               <p className="text-white/80">
-                Chittagong University of Engineering & Technology (CUET) Class Management System 
-                is committed to protecting your privacy and ensuring the security of your personal 
-                information. This Privacy Policy explains how we collect, use, store, and protect 
+                Chittagong University of Engineering & Technology (CUET) Class Management System
+                is committed to protecting your privacy and ensuring the security of your personal
+                information. This Privacy Policy explains how we collect, use, store, and protect
                 your information when you use our platform.
               </p>
             </div>
@@ -130,7 +131,7 @@ const Privacy = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">Information Sharing</h2>
               <p className="text-white/80 mb-4">
-                We do not sell, trade, or rent your personal information to third parties. 
+                We do not sell, trade, or rent your personal information to third parties.
                 Information may be shared only in the following circumstances:
               </p>
               <ul className="list-disc list-inside text-white/80 space-y-2">
@@ -159,9 +160,9 @@ const Privacy = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">Data Retention</h2>
               <p className="text-white/80">
-                We retain your information for as long as necessary to provide services and 
-                comply with university policies. Academic records may be retained permanently 
-                for institutional purposes. Personal information may be deleted upon graduation 
+                We retain your information for as long as necessary to provide services and
+                comply with university policies. Academic records may be retained permanently
+                for institutional purposes. Personal information may be deleted upon graduation
                 or separation from the university, subject to legal and policy requirements.
               </p>
             </div>

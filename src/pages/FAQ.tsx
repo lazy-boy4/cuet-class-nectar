@@ -1,14 +1,15 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, HelpCircle, Plus, Minus, ChevronUp, ChevronDown } from "lucide-react";
 
 const FAQ = () => {
   const [expandedItems, setExpandedItems] = useState<number[]>([]);
+  const navigate = useNavigate();
 
   const toggleItem = (index: number) => {
-    setExpandedItems(prev => 
-      prev.includes(index) 
+    setExpandedItems(prev =>
+      prev.includes(index)
         ? prev.filter(i => i !== index)
         : [...prev, index]
     );
@@ -148,13 +149,13 @@ const FAQ = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -183,7 +184,7 @@ const FAQ = () => {
                   {category.questions.map((faq, questionIndex) => {
                     const globalIndex = categoryIndex * 100 + questionIndex;
                     const isExpanded = expandedItems.includes(globalIndex);
-                    
+
                     return (
                       <div key={questionIndex} className="border border-white/10 rounded-lg overflow-hidden">
                         <button

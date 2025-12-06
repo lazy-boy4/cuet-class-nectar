@@ -167,8 +167,8 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${isScrolled
-          ? "bg-cuet-navy/90 shadow-md backdrop-blur-md"
-          : "bg-transparent"
+        ? "bg-cuet-navy/90 shadow-md backdrop-blur-md"
+        : "bg-transparent"
         }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -209,21 +209,39 @@ const Header = () => {
                 <Search className="w-4 h-4" />
                 <span>Search</span>
               </Link>
+              {userProfile?.name && (
+                <span className="hidden md:block text-white font-medium text-sm mr-2">
+                  {userProfile.name}
+                </span>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 border-2 border-white/20 hover:border-white/40 transition-colors">
-                    {userProfile?.name ? (
-                      <span className="text-white text-sm font-semibold">{getUserInitials()}</span>
+                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 border-2 border-white/20 hover:border-white/40 transition-colors overflow-hidden">
+                    {userProfile?.picture ? (
+                      <img
+                        src={userProfile.picture}
+                        alt={userProfile.name || "Profile"}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <User className="w-5 h-5 text-white" />
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   {userProfile?.name && (
                     <>
-                      <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
-                        {userProfile.name}
+                      <div className="flex items-center gap-3 p-3">
+                        <div className="flex flex-col space-y-0.5">
+                          <p className="text-sm font-medium leading-none text-gray-900">
+                            {userProfile.name}
+                          </p>
+                          {userRole && (
+                            <p className="text-xs leading-none text-gray-500 capitalize">
+                              {userRole}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <DropdownMenuSeparator />
                     </>
@@ -275,8 +293,8 @@ const Header = () => {
       {/* Mobile Menu */}
       <div
         className={`absolute w-full transform bg-cuet-navy/95 px-4 py-4 backdrop-blur-lg transition-all duration-300 ease-in-out md:hidden ${isMenuOpen
-            ? "translate-y-0 opacity-100"
-            : "-translate-y-full opacity-0"
+          ? "translate-y-0 opacity-100"
+          : "-translate-y-full opacity-0"
           }`}
       >
         <nav className="flex flex-col space-y-4">

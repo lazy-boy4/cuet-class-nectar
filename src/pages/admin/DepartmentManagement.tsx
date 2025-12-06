@@ -84,7 +84,8 @@ export default function DepartmentManagement() {
       <ConfirmDeleteDialog
         open={!!deleteDept}
         onOpenChange={v => !v && setDeleteDept(null)}
-        department={deleteDept}
+        title="Delete Department"
+        description={<>Are you sure you want to delete <span className="font-semibold text-white">{deleteDept?.name}</span>? This action cannot be undone.</>}
         onConfirm={() => {
           if (deleteDept) deleteMutation.mutate(deleteDept.id);
         }}

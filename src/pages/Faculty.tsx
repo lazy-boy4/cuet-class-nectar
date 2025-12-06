@@ -1,12 +1,12 @@
-
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, MapPin, GraduationCap } from "lucide-react";
 
 const Faculty = () => {
+  const navigate = useNavigate();
   const departments = [
     "Civil Engineering",
-    "Electrical & Electronic Engineering", 
+    "Electrical & Electronic Engineering",
     "Mechanical Engineering",
     "Computer Science & Engineering",
     "Electronics & Telecommunication Engineering",
@@ -24,13 +24,13 @@ const Faculty = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -43,7 +43,7 @@ const Faculty = () => {
               Faculty & Departments
             </h1>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Meet our distinguished faculty members across 12 specialized departments, 
+              Meet our distinguished faculty members across 12 specialized departments,
               dedicated to excellence in engineering education and research.
             </p>
           </div>
@@ -113,7 +113,7 @@ const Faculty = () => {
             </div>
             <div className="mt-8 p-6 bg-white/5 rounded-lg">
               <p className="text-white/80 italic text-center">
-                "Our faculty members are committed to providing world-class education 
+                "Our faculty members are committed to providing world-class education
                 and fostering innovation through research and development."
               </p>
             </div>

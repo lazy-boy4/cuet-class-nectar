@@ -1,12 +1,12 @@
-
 import React from "react";
-import { Link } from "react-router-dom";
-import { 
-  ArrowLeft, Calendar, Users, BookOpen, Bell, 
-  BarChart3, Shield, Clock, Download 
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft, Calendar, Users, BookOpen, Bell,
+  BarChart3, Shield, Clock, Download
 } from "lucide-react";
 
 const Features = () => {
+  const navigate = useNavigate();
   const features = [
     {
       icon: Calendar,
@@ -63,13 +63,13 @@ const Features = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -82,7 +82,7 @@ const Features = () => {
               System Features
             </h1>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Discover the comprehensive features that make CUET Class Management System 
+              Discover the comprehensive features that make CUET Class Management System
               the perfect solution for academic administration and student management.
             </p>
           </div>
@@ -107,21 +107,21 @@ const Features = () => {
               <div className="glass-card p-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-4">User-Friendly Interface</h3>
                 <p className="text-white/70">
-                  Intuitive design that makes navigation easy for all user types, 
+                  Intuitive design that makes navigation easy for all user types,
                   from students to administrators.
                 </p>
               </div>
               <div className="glass-card p-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-4">Mobile Responsive</h3>
                 <p className="text-white/70">
-                  Access the system from any device with our fully responsive 
+                  Access the system from any device with our fully responsive
                   design that works on desktop, tablet, and mobile.
                 </p>
               </div>
               <div className="glass-card p-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-4">Data Security</h3>
                 <p className="text-white/70">
-                  Enterprise-grade security with encrypted data transmission 
+                  Enterprise-grade security with encrypted data transmission
                   and secure authentication protocols.
                 </p>
               </div>

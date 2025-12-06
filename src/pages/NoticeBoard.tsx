@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { fetchNotices } from "@/api"; // Updated import path
+import { fetchStudentNotices } from "@/api/notices";
 import { Notice } from "@/types";
 
 const NoticeBoard = () => {
@@ -32,19 +31,23 @@ const NoticeBoard = () => {
   // Fetch notices using react-query
   const { data: fetchedNotices, isLoading, isError } = useQuery({
     queryKey: ["notices"],
-    queryFn: fetchNotices,
+    queryFn: fetchStudentNotices,
   });
 
   useEffect(() => {
     if (fetchedNotices) {
-      setNotices(fetchedNotices as Notice[]); // Type assertion
+      setNotices(fetchedNotices as Notice[]);
     }
   }, [fetchedNotices]);
 
   // Format date
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return format(date, "MMM dd, yyyy - hh:mm a");
+    try {
+      const date = new Date(dateString);
+      return format(date, "MMM dd, yyyy - hh:mm a");
+    } catch {
+      return dateString;
+    }
   };
 
   // Filter notices based on search term
@@ -70,14 +73,18 @@ const NoticeBoard = () => {
               <Badge variant="outline" className="bg-blue-500/10 text-blue-400">
                 Global
               </Badge>
+            ) : notice.deptCode ? (
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-400">
+                Dept: {notice.deptCode}
+              </Badge>
             ) : (
               <Badge variant="outline" className="bg-green-500/10 text-green-400">
-                {notice.className || "Class Notice"} {/* Handle potentially undefined className */}
+                {notice.className || notice.classId || "Class Notice"}
               </Badge>
             )}
             <span>by</span>
             <span className="font-medium text-white/80">
-              {notice.authorName || notice.creatorName || "Admin"} {/* Handle potentially undefined names */}
+              {notice.authorName || notice.creatorName || "Admin"}
             </span>
           </div>
         </CardHeader>

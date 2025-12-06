@@ -1,13 +1,14 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { 
-  ArrowLeft, Search, HelpCircle, Book, Users, 
-  Settings, MessageCircle, Phone, Mail 
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft, Search, HelpCircle, Book, Users,
+  Settings, MessageCircle, Phone, Mail, FileText, Smartphone
 } from "lucide-react";
 
 const Help = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   const helpCategories = [
     {
@@ -16,7 +17,7 @@ const Help = () => {
       description: "Learn how to manage your account, update profile, and change passwords.",
       articles: [
         "How to reset your password",
-        "Updating your profile information", 
+        "Updating your profile information",
         "Account verification process",
         "Managing notification preferences"
       ]
@@ -84,13 +85,13 @@ const Help = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -103,10 +104,10 @@ const Help = () => {
               Help Center
             </h1>
             <p className="text-xl text-white/80 max-w-3xl mx-auto mb-8">
-              Find answers to your questions and learn how to make the most of 
+              Find answers to your questions and learn how to make the most of
               the CUET Class Management System.
             </p>
-            
+
             {/* Search Bar */}
             <div className="max-w-md mx-auto">
               <div className="relative">

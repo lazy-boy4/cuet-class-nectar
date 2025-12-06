@@ -8,7 +8,7 @@ import { Upload, Download, CheckCircle, AlertCircle, FileText } from "lucide-rea
 import { toast } from "@/hooks/use-toast";
 
 interface BulkUploadFormProps {
-  onUpload: (data: any[]) => void;
+  onUpload: (file: File) => void;
   loading: boolean;
 }
 
@@ -44,7 +44,7 @@ const BulkUploadForm = ({ onUpload, loading }: BulkUploadFormProps) => {
     const lines = csvText.split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
     const data = [];
-    
+
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim()) {
         const values = lines[i].split(',').map(v => v.trim());
@@ -55,63 +55,14 @@ const BulkUploadForm = ({ onUpload, loading }: BulkUploadFormProps) => {
         data.push(row);
       }
     }
-    
+
     return data;
   };
 
   const handleUpload = async () => {
     if (!file) return;
-
-    setUploadStatus("processing");
-    
-    try {
-      const text = await file.text();
-      const data = parseCSV(text);
-      
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock validation and processing
-      const errors: string[] = [];
-      let successCount = 0;
-      
-      data.forEach((row, index) => {
-        if (!row['CUET ID'] || !row['Full Name'] || !row['Email']) {
-          errors.push(`Row ${index + 2}: Missing required fields`);
-        } else {
-          successCount++;
-        }
-      });
-      
-      setUploadResults({
-        success: successCount,
-        failed: errors.length,
-        errors: errors.slice(0, 5), // Show only first 5 errors
-      });
-      
-      if (errors.length === 0) {
-        setUploadStatus("success");
-        onUpload(data);
-        toast({
-          title: "Upload Successful",
-          description: `Successfully uploaded ${successCount} students.`,
-        });
-      } else {
-        setUploadStatus("error");
-        toast({
-          title: "Upload Completed with Errors",
-          description: `${successCount} students uploaded, ${errors.length} failed.`,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      setUploadStatus("error");
-      toast({
-        title: "Upload Failed",
-        description: "Error processing the CSV file.",
-        variant: "destructive",
-      });
-    }
+    onUpload(file);
+    // Move status handling to parent or useEffect based on loading state, but for now parent drives loading.
   };
 
   const downloadSample = () => {

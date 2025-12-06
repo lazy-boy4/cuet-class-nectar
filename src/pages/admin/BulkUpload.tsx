@@ -1,9 +1,11 @@
 
-import React, { useState } from "react";
+import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "react-router-dom";
 import BulkUploadForm from "@/components/admin/BulkUploadForm";
 import { toast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { bulkUploadStudents } from "@/api/admin";
 
 const QuickAdminNav = () => (
   <nav className="mb-8 flex flex-wrap gap-3">
@@ -19,41 +21,37 @@ const QuickAdminNav = () => (
 );
 
 export default function BulkUpload() {
-  const [loading, setLoading] = useState(false);
-
-  const handleBulkUpload = async (data: any[]) => {
-    setLoading(true);
-    
-    try {
-      // Simulate API call to create students
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log("Uploading students:", data);
-      
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return bulkUploadStudents(formData);
+    },
+    onSuccess: (data) => {
       toast({
         title: "Students Added",
-        description: `Successfully added ${data.length} students to the system.`,
+        description: `Successfully processed file. ${data.upserted_count || 'Students'} upserted.`,
       });
-    } catch (error) {
-      toast({
-        title: "Upload Error",
-        description: "Failed to add students to the system.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.error || "Failed to upload students.";
+      toast({ title: "Upload Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const handleBulkUpload = (file: File) => {
+    uploadMutation.mutate(file);
   };
 
   return (
-    <DashboardLayout 
-      title="Bulk Student Upload" 
+    <DashboardLayout
+      title="Bulk Student Upload"
       description="Upload multiple students at once using CSV files."
     >
       <QuickAdminNav />
-      
+
       <div className="max-w-4xl">
-        <BulkUploadForm onUpload={handleBulkUpload} loading={loading} />
+        <BulkUploadForm onUpload={handleBulkUpload} loading={uploadMutation.isPending} />
       </div>
     </DashboardLayout>
   );

@@ -1,21 +1,22 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, Scale, AlertTriangle, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, FileText, Shield, AlertCircle, CheckCircle, Users, Scale, AlertTriangle } from "lucide-react";
 
 const Terms = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-cuet-navy">
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -38,13 +39,13 @@ const Terms = () => {
 
           {/* Terms Content */}
           <div className="space-y-8">
-            
+
             {/* Acceptance */}
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">1. Acceptance of Terms</h2>
               <p className="text-white/80">
-                By accessing and using the CUET Class Management System, you agree to be bound 
-                by these Terms of Service and all applicable laws and regulations. If you do 
+                By accessing and using the CUET Class Management System, you agree to be bound
+                by these Terms of Service and all applicable laws and regulations. If you do
                 not agree with any of these terms, you are prohibited from using this system.
               </p>
             </div>
@@ -129,7 +130,7 @@ const Terms = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">5. Privacy and Data Protection</h2>
               <p className="text-white/80 mb-4">
-                Your privacy is important to us. Please review our Privacy Policy for detailed 
+                Your privacy is important to us. Please review our Privacy Policy for detailed
                 information about how we collect, use, and protect your personal information.
               </p>
               <ul className="list-disc list-inside text-white/80 space-y-2">
@@ -147,7 +148,7 @@ const Terms = () => {
                 <h2 className="text-2xl font-bold text-white">6. Intellectual Property</h2>
               </div>
               <p className="text-white/80 mb-4">
-                The CUET Class Management System and all its content, features, and functionality 
+                The CUET Class Management System and all its content, features, and functionality
                 are owned by CUET and are protected by copyright, trademark, and other laws.
               </p>
               <ul className="list-disc list-inside text-white/80 space-y-2">
@@ -162,7 +163,7 @@ const Terms = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">7. System Availability</h2>
               <p className="text-white/80 mb-4">
-                While we strive to maintain continuous system availability, we cannot guarantee 
+                While we strive to maintain continuous system availability, we cannot guarantee
                 uninterrupted service. The system may be temporarily unavailable for:
               </p>
               <ul className="list-disc list-inside text-white/80 space-y-2">
@@ -180,10 +181,10 @@ const Terms = () => {
                 <h2 className="text-2xl font-bold text-white">8. Limitation of Liability</h2>
               </div>
               <p className="text-white/80">
-                CUET and its affiliates shall not be liable for any direct, indirect, incidental, 
-                special, or consequential damages resulting from the use or inability to use this 
-                system. This includes but is not limited to data loss, academic consequences, or 
-                system downtime. Users are responsible for maintaining backup records of important 
+                CUET and its affiliates shall not be liable for any direct, indirect, incidental,
+                special, or consequential damages resulting from the use or inability to use this
+                system. This includes but is not limited to data loss, academic consequences, or
+                system downtime. Users are responsible for maintaining backup records of important
                 academic information.
               </p>
             </div>
@@ -192,8 +193,8 @@ const Terms = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">9. Modifications to Terms</h2>
               <p className="text-white/80">
-                CUET reserves the right to modify these terms at any time. Users will be notified 
-                of significant changes through the system notification board or email. Continued 
+                CUET reserves the right to modify these terms at any time. Users will be notified
+                of significant changes through the system notification board or email. Continued
                 use of the system after modifications constitutes acceptance of the updated terms.
               </p>
             </div>

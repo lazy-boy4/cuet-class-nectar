@@ -1,21 +1,22 @@
-
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Building, Users, Award, Globe } from "lucide-react";
 
 const About = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-cuet-navy">
       {/* Header */}
       <header className="border-b border-white/10 bg-cuet-navy/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
-          <Link
-            to="/"
+          <button
+            onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-white/70 hover:text-white"
           >
             <ArrowLeft size={20} />
-            <span>Back to Home</span>
-          </Link>
+            <span>Go Back</span>
+          </button>
         </div>
       </header>
 
@@ -38,14 +39,14 @@ const About = () => {
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Our Legacy</h2>
                 <p className="text-white/80 mb-4">
-                  Chittagong University of Engineering & Technology (CUET) is a premier 
-                  engineering institution in Bangladesh, established in 1968. Located in 
-                  the port city of Chittagong, CUET has been at the forefront of 
+                  Chittagong University of Engineering & Technology (CUET) is a premier
+                  engineering institution in Bangladesh, established in 1968. Located in
+                  the port city of Chittagong, CUET has been at the forefront of
                   engineering education and research for over five decades.
                 </p>
                 <p className="text-white/80">
-                  With a commitment to excellence, innovation, and social responsibility, 
-                  CUET continues to produce skilled engineers and technologists who 
+                  With a commitment to excellence, innovation, and social responsibility,
+                  CUET continues to produce skilled engineers and technologists who
                   contribute significantly to national and international development.
                 </p>
               </div>
@@ -88,16 +89,16 @@ const About = () => {
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
               <p className="text-white/80">
-                To provide quality education in engineering and technology, conduct 
-                research for national development, and produce competent engineers 
+                To provide quality education in engineering and technology, conduct
+                research for national development, and produce competent engineers
                 and technologists with ethical values to serve humanity.
               </p>
             </div>
             <div className="glass-card p-8">
               <h2 className="text-2xl font-bold text-white mb-4">Our Vision</h2>
               <p className="text-white/80">
-                To be a center of excellence in engineering education and research, 
-                contributing to sustainable development and technological advancement 
+                To be a center of excellence in engineering education and research,
+                contributing to sustainable development and technological advancement
                 in Bangladesh and beyond.
               </p>
             </div>

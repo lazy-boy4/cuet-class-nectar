@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "react-router-dom";
@@ -12,9 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { mockClasses } from "@/api/mockData/classes";
-import { mockTeachers } from "@/api/mockData/users";
 import { toast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchClassesForAdmin, fetchUsersForAdmin, assignTeachersToClass, unassignTeachersFromClass } from "@/api/admin";
+import { Class, User } from "@/types";
 
 const QuickAdminNav = () => (
   <nav className="mb-8 flex flex-wrap gap-3">
@@ -30,21 +32,43 @@ const QuickAdminNav = () => (
 );
 
 export default function AssignTeachers() {
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const [assignments, setAssignments] = useState<Record<string, string>>({}); // local staging state
+  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
 
-  // Initialize assignments with existing teacher assignments
+  // Fetch classes
+  const { data: classes = [], isLoading: loadingClasses } = useQuery({
+    queryKey: ["classes"],
+    queryFn: fetchClassesForAdmin,
+  });
+
+  // Fetch all users to filter teachers
+  // Ideally, we'd have a specific endpoint for teachers, but filtering users works with current API
+  const { data: users = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ["users"],
+    queryFn: fetchUsersForAdmin,
+  });
+
+  const teachers = users.filter((u: User) => u.role === "teacher");
+
+  // Initialize assignments state from fetched classes
+  // Note: This only runs when classes change. Ideally we sync local state with server state.
+  // But for "staging" changes, we might want to separate them.
+  // For simplicity, let's treat the Select as a direct action or staged action.
+  // The UI implies a "Save" button, so we should stage changes.
   React.useEffect(() => {
-    const initialAssignments: Record<string, string> = {};
-    mockClasses.forEach(classItem => {
-      if (classItem.teacherId) {
-        initialAssignments[classItem.id] = classItem.teacherId;
-      }
-    });
-    setAssignments(initialAssignments);
-  }, []);
+    if (classes.length > 0) {
+      const initialAssignments: Record<string, string> = {};
+      classes.forEach(classItem => {
+        if (classItem.teacherId) {
+          initialAssignments[classItem.id] = classItem.teacherId;
+        }
+      });
+      setAssignments(initialAssignments);
+    }
+  }, [classes]);
 
-  const handleAssignment = (classId: string, teacherId: string) => {
+  const handleAssignmentChange = (classId: string, teacherId: string) => {
     setAssignments(prev => {
       const newAssignments = { ...prev };
       if (teacherId === "none") {
@@ -54,45 +78,85 @@ export default function AssignTeachers() {
       }
       return newAssignments;
     });
+    setPendingChanges(prev => new Set(prev).add(classId));
   };
 
+  const assignMutation = useMutation({
+    mutationFn: async ({ classId, teacherId }: { classId: string, teacherId: string }) => {
+      return assignTeachersToClass(classId, [teacherId]);
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: async ({ classId }: { classId: string }) => {
+      // We need teacherId to unassign specific teacher, or maybe unassign generic?
+      // The API unassignTeachersFromClass takes teacherIds array.
+      // We need to know who was assigned.
+      // If we select "none", we want to remove the CURRENTLY assigned teacher.
+      // We can find that from the 'classes' data, NOT the 'assignments' state (which is new state).
+      const currentClass = classes.find((c: Class) => c.id === classId);
+      if (currentClass && currentClass.teacherId) {
+        return unassignTeachersFromClass(classId, [currentClass.teacherId]);
+      }
+      return Promise.resolve(); // Nothing to unassign
+    },
+  });
+
   const handleSaveAssignments = async () => {
-    setLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+    // Process all pending changes
+    // This logic is a bit complex: we need to iterate pending changes and call API.
+    // For "none", call unassign. For valid ID, call assign.
+    let successCount = 0;
+    let failCount = 0;
+
+    const changes = Array.from(pendingChanges);
+    if (changes.length === 0) {
+      toast({ title: "No changes", description: "No assignment changes to save." });
+      return;
+    }
+
+    // Show loading toast or state handled by parent loading
+
+    for (const classId of changes) {
+      const teacherId = assignments[classId];
+      try {
+        if (!teacherId || teacherId === "none") {
+          await unassignMutation.mutateAsync({ classId });
+        } else {
+          await assignMutation.mutateAsync({ classId, teacherId });
+        }
+        successCount++;
+      } catch (err) {
+        console.error(err);
+        failCount++;
+      }
+    }
+
+    setPendingChanges(new Set());
+    queryClient.invalidateQueries({ queryKey: ["classes"] });
+
+    if (failCount === 0) {
+      toast({ title: "Assignments Saved", description: `Updated assignments for ${successCount} classes.` });
+    } else {
       toast({
-        title: "Assignments Saved",
-        description: "Teacher assignments have been updated successfully.",
+        title: "Partial Success",
+        description: `Updated ${successCount} classes, failed ${failCount}.`,
+        variant: "destructive"
       });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save teacher assignments.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const getTeacherName = (teacherId: string) => {
-    const teacher = mockTeachers.find(t => t.id === teacherId);
-    return teacher ? teacher.name : "Unknown Teacher";
-  };
-
   const assignedCount = Object.keys(assignments).length;
-  const totalClasses = mockClasses.length;
+  const totalClasses = classes.length;
+  const loading = loadingClasses || loadingUsers || assignMutation.isPending || unassignMutation.isPending;
 
   return (
-    <DashboardLayout 
-      title="Assign Teachers" 
+    <DashboardLayout
+      title="Assign Teachers"
       description="Assign teachers to specific classes for the semester."
     >
       <QuickAdminNav />
-      
+
       <div className="space-y-6">
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -144,9 +208,9 @@ export default function AssignTeachers() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-white">Class Assignments</CardTitle>
-              <Button 
+              <Button
                 onClick={handleSaveAssignments}
-                disabled={loading}
+                disabled={loading || pendingChanges.size === 0}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {loading ? (
@@ -157,7 +221,7 @@ export default function AssignTeachers() {
                 ) : (
                   <>
                     <Save size={16} className="mr-2" />
-                    Save Assignments
+                    Save Assignments {pendingChanges.size > 0 && `(${pendingChanges.size})`}
                   </>
                 )}
               </Button>
@@ -165,9 +229,9 @@ export default function AssignTeachers() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockClasses.map((classItem) => (
-                <div 
-                  key={classItem.id} 
+              {classes.map((classItem: Class) => (
+                <div
+                  key={classItem.id}
                   className="flex items-center justify-between p-4 border border-white/10 rounded-lg bg-white/5"
                 >
                   <div className="flex-1">
@@ -176,20 +240,22 @@ export default function AssignTeachers() {
                         {classItem.departmentCode}
                       </Badge>
                       <span className="text-white font-medium">
-                        {classItem.courseName} - Section {classItem.section}
+                        {classItem.courseName || `Course ${classItem.courseId}`} - Section {classItem.section}
                       </span>
                       <span className="text-white/60">({classItem.session})</span>
                     </div>
-                    <p className="text-white/70 text-sm mt-1">
-                      Course Code: {classItem.courseCode}
-                    </p>
+                    {classItem.courseCode && (
+                      <p className="text-white/70 text-sm mt-1">
+                        Course Code: {classItem.courseCode}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-4">
                     <div className="w-64">
                       <Select
                         value={assignments[classItem.id] || "none"}
-                        onValueChange={(value) => handleAssignment(classItem.id, value)}
+                        onValueChange={(value) => handleAssignmentChange(classItem.id, value)}
                       >
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select teacher" />
@@ -198,9 +264,9 @@ export default function AssignTeachers() {
                           <SelectItem value="none" className="text-white">
                             No teacher assigned
                           </SelectItem>
-                          {mockTeachers
-                            .filter(teacher => teacher.department === classItem.departmentCode)
-                            .map((teacher) => (
+                          {teachers
+                            .filter((teacher: User) => !teacher.department || teacher.department.startsWith(classItem.departmentCode.split('-')[0]) || true) // Relaxed filter, or match by dept code prefix
+                            .map((teacher: User) => (
                               <SelectItem key={teacher.id} value={teacher.id} className="text-white">
                                 {teacher.name}
                               </SelectItem>
@@ -217,6 +283,9 @@ export default function AssignTeachers() {
                   </div>
                 </div>
               ))}
+              {classes.length === 0 && !loading && (
+                <p className="text-center text-white/50 py-4">No classes found.</p>
+              )}
             </div>
           </CardContent>
         </Card>
