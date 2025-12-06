@@ -1,8 +1,8 @@
 package services
 
 import (
-	"cuet-class-nectar/internal/models"
-	// "cuet-class-nectar/internal/supabase" // For mock setup
+	_ "github.com/lazy-boy4/cuet-class-nectar/internal/models"
+	// "github.com/lazy-boy4/cuet-class-nectar/internal/supabase" // For mock setup
 	// "fmt"
 	"testing"
 	// "github.com/stretchr/testify/assert"

@@ -2,8 +2,10 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
+
 	// "strings" // Removed as strings.Join is no longer needed with []string for In
 	"time"
 
@@ -258,9 +260,10 @@ func GetPendingEnrollmentsForClass(classID int, requestorUserID uuid.UUID) ([]mo
 	}
 
 	isAuthorized := false
-	if requestorRole == "admin" {
+	switch requestorRole {
+	case "admin":
 		isAuthorized = true
-	} else if requestorRole == "cr" {
+	case "cr":
 		var crEnrollment []models.Enrollment
 		err = client.DB.From("enrollments").Select("status").
 			Eq("user_id", requestorUserID.String()).

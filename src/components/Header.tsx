@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, ChevronRight, LogOut, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -13,11 +13,34 @@ import {
 const Header = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{ name?: string; picture?: string } | null>(null);
+
+  // Function to check auth state
+  const checkUserAuth = useCallback(() => {
+    const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+    const storedToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+    const storedProfile = localStorage.getItem("userProfile") || sessionStorage.getItem("userProfile");
+
+    const loggedIn = !!storedToken;
+    setIsLoggedIn(loggedIn);
+    setUserRole(storedRole);
+
+    if (storedProfile) {
+      try {
+        setUserProfile(JSON.parse(storedProfile));
+      } catch (error) {
+        console.error("Error parsing user profile:", error);
+        setUserProfile(null);
+      }
+    } else {
+      setUserProfile(null);
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,49 +51,71 @@ const Header = () => {
       }
     };
 
-    // Mock authentication check - replaces Supabase auth
-    const checkUserAuth = () => {
-      const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-      const storedLoginStatus = localStorage.getItem("isLoggedIn") === "true";
-      const storedProfile = localStorage.getItem("userProfile");
-      
-      setIsLoggedIn(storedLoginStatus);
-      setUserRole(storedRole);
-      
-      if (storedProfile) {
-        try {
-          setUserProfile(JSON.parse(storedProfile));
-        } catch (error) {
-          console.error("Error parsing user profile:", error);
-        }
+    // Check auth on mount
+    checkUserAuth();
+
+    // Listen for storage changes (for cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "access_token" || e.key === "userRole" || e.key === "userProfile" || e.key === "isLoggedIn") {
+        checkUserAuth();
       }
     };
 
-    checkUserAuth();
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [checkUserAuth]);
+
+  // Re-check auth state when location changes (navigation)
+  useEffect(() => {
+    checkUserAuth();
+  }, [location.pathname, checkUserAuth]);
 
   const handleLogout = () => {
     try {
+      // Clear all auth data
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("user_email");
       localStorage.removeItem("userRole");
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("userProfile");
+      localStorage.removeItem("userFullName");
+      localStorage.removeItem("userDepartment");
+      localStorage.removeItem("userBatch");
+      localStorage.removeItem("userSection");
+      localStorage.removeItem("userStudentId");
+
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("refresh_token");
+      sessionStorage.removeItem("user_id");
+      sessionStorage.removeItem("user_email");
       sessionStorage.removeItem("userRole");
       sessionStorage.removeItem("isLoggedIn");
       sessionStorage.removeItem("userProfile");
+      sessionStorage.removeItem("userFullName");
+      sessionStorage.removeItem("userDepartment");
+      sessionStorage.removeItem("userBatch");
+      sessionStorage.removeItem("userSection");
+      sessionStorage.removeItem("userStudentId");
+
       setIsLoggedIn(false);
       setUserRole(null);
       setUserProfile(null);
-      
+
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
         duration: 3000,
       });
-      
+
       // Navigate to home page
-      window.location.href = "/";
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -86,6 +131,7 @@ const Header = () => {
           navigate("/teacher/dashboard");
           break;
         case "student":
+        case "cr":
           navigate("/student/dashboard");
           break;
         default:
@@ -97,7 +143,7 @@ const Header = () => {
   };
 
   const handleProfileClick = () => {
-    if (userRole === "student") {
+    if (userRole === "student" || userRole === "cr") {
       navigate("/student/profile");
     } else if (userRole === "teacher") {
       navigate("/teacher/profile");
@@ -120,11 +166,10 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${isScrolled
           ? "bg-cuet-navy/90 shadow-md backdrop-blur-md"
           : "bg-transparent"
-      }`}
+        }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center space-x-2">
@@ -155,7 +200,7 @@ const Header = () => {
                   Dashboard
                 </Link>
               )}
-              {userRole === "student" && (
+              {(userRole === "student" || userRole === "cr") && (
                 <Link to="/student/dashboard" className="navbar-link">
                   Dashboard
                 </Link>
@@ -166,11 +211,23 @@ const Header = () => {
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-black border-2 border-white/20 hover:border-white/40 transition-colors">
-                    <User className="w-5 h-5 text-white" />
+                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 border-2 border-white/20 hover:border-white/40 transition-colors">
+                    {userProfile?.name ? (
+                      <span className="text-white text-sm font-semibold">{getUserInitials()}</span>
+                    ) : (
+                      <User className="w-5 h-5 text-white" />
+                    )}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  {userProfile?.name && (
+                    <>
+                      <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
+                        {userProfile.name}
+                      </div>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={handleProfileClick}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
@@ -217,15 +274,19 @@ const Header = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`absolute w-full transform bg-cuet-navy/95 px-4 py-4 backdrop-blur-lg transition-all duration-300 ease-in-out md:hidden ${
-          isMenuOpen
+        className={`absolute w-full transform bg-cuet-navy/95 px-4 py-4 backdrop-blur-lg transition-all duration-300 ease-in-out md:hidden ${isMenuOpen
             ? "translate-y-0 opacity-100"
             : "-translate-y-full opacity-0"
-        }`}
+          }`}
       >
         <nav className="flex flex-col space-y-4">
           {isLoggedIn ? (
             <>
+              {userProfile?.name && (
+                <div className="py-2 text-white font-medium border-b border-white/10 mb-2">
+                  {userProfile.name}
+                </div>
+              )}
               {userRole === "admin" && (
                 <Link
                   to="/admin/dashboard"
@@ -246,7 +307,7 @@ const Header = () => {
                   <ChevronRight size={16} />
                 </Link>
               )}
-              {userRole === "student" && (
+              {(userRole === "student" || userRole === "cr") && (
                 <Link
                   to="/student/dashboard"
                   className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"

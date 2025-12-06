@@ -3,8 +3,10 @@ package services
 import (
 	// "context" // No longer directly used as admin auth calls are stubbed
 	"fmt"
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
+
 	// "os" // No longer directly used as admin auth calls are stubbed
 	"github.com/google/uuid" // Added for userID type in UpdateOwnUserProfile
 	// "github.com/nedpals/supabase-go" // No longer directly used for types like AdminUserCredentials
@@ -239,16 +241,22 @@ func UpdateOwnUserProfile(userID uuid.UUID, input models.StudentProfileUpdateInp
 // This implementation will likely error on duplicate unique keys (email, student_id, id).
 // Returns counts of successful creations and a list of errors.
 func BulkUpsertStudentProfiles(students []models.BulkUploadStudentData) (createdCount int, updatedCount int, serviceErrors []error) {
-	client := sbClient.GetClient()
-	if client == nil {
-		serviceErrors = append(serviceErrors, fmt.Errorf("Supabase client not initialized"))
+	if len(students) == 0 {
+		serviceErrors = append(serviceErrors, fmt.Errorf("no student data provided"))
 		return
 	}
+
+	client := sbClient.GetClient()
 
 	for i, studentData := range students { // Added index for more specific error messages
 		if studentData.Email == "" || studentData.FullName == "" || studentData.StudentID == "" || studentData.DeptCode == "" || studentData.Batch == "" {
 			serviceErrors = append(serviceErrors, fmt.Errorf("row %d: missing required fields (Email, FullName, StudentID, DeptCode, Batch) for student email '%s' (or student_id '%s')", i+1, studentData.Email, studentData.StudentID))
 			continue
+		}
+
+		if client == nil {
+			serviceErrors = append(serviceErrors, fmt.Errorf("Supabase client not initialized"))
+			return
 		}
 
 		profileData := map[string]interface{}{

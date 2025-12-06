@@ -2,47 +2,97 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  BookOpen, 
-  Users, 
-  Calendar, 
-  Bell, 
-  User, 
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Bell,
+  User,
   FileText,
   CheckSquare,
   Clock
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockUsers } from "@/api/mockData/users";
 import { mockClasses } from "@/api/mockData/classes";
 import { fetchNotices } from "@/api";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  dept_code: string;
+  role: string;
+}
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  
+  const { toast } = useToast();
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     document.title = "Teacher Dashboard - CUET Class Management System";
-    
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "teacher") {
-      navigate("/login");
-      return;
-    }
-    
-    // Find current teacher (mock)
-    const teacher = mockUsers.find(u => u.role === "teacher");
-    if (teacher) {
-      setCurrentUser(teacher);
-    }
-  }, [navigate]);
 
-  // Get classes assigned to current teacher
-  const assignedClasses = mockClasses.filter(cls => 
-    cls.teacherId === currentUser?.id || cls.teacherName === currentUser?.name
+    const fetchUserProfile = async () => {
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+
+      if (!accessToken || !userRole || userRole !== "teacher") {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/student/profile`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.clear();
+            sessionStorage.clear();
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch profile");
+        }
+
+        const profileData: UserProfile = await response.json();
+        setCurrentUser(profileData);
+
+        // Update localStorage with fresh data
+        const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+        storage.setItem("userProfile", JSON.stringify({
+          name: profileData.full_name,
+          picture: "",
+        }));
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile. Please try logging in again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate, toast]);
+
+  // Get classes assigned to current teacher (for now using mock data for classes)
+  const assignedClasses = mockClasses.filter(cls =>
+    cls.teacherId === currentUser?.id || cls.teacherName === currentUser?.full_name
   );
 
   const { data: notices = [] } = useQuery({
@@ -67,7 +117,7 @@ const TeacherDashboard = () => {
 
   return (
     <DashboardLayout
-      title={`Welcome, ${currentUser?.name || "Teacher"}`}
+      title={`Welcome, ${currentUser?.full_name || "Teacher"}`}
       description="Manage your classes and track student progress"
     >
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -87,7 +137,7 @@ const TeacherDashboard = () => {
                 </Card>
               ) : (
                 assignedClasses.map((cls) => (
-                  <Card 
+                  <Card
                     key={cls.id}
                     className="border-white/10 bg-white/5 hover:bg-white/[0.07] transition-all duration-300"
                   >
@@ -113,8 +163,8 @@ const TeacherDashboard = () => {
                       </div>
                     </CardContent>
                     <CardContent className="pt-0">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => navigate(`/teacher/classes/${cls.id}`)}
                         className="w-full"
@@ -171,7 +221,7 @@ const TeacherDashboard = () => {
             </div>
           </section>
         </div>
-        
+
         <div className="col-span-1 space-y-6">
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Quick Actions</h2>
@@ -192,7 +242,7 @@ const TeacherDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -208,7 +258,7 @@ const TeacherDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -224,7 +274,7 @@ const TeacherDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -243,7 +293,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </section>
-          
+
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Recent Notices</h2>
             <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">

@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
-	"github.com/lazy-boy4/cuet-class-nectar/internal/services"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
+
+	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
+	"github.com/lazy-boy4/cuet-class-nectar/internal/services"
+
 	// "strconv"
 	"github.com/google/uuid" // Added back for uuid.Parse
 
@@ -523,7 +525,7 @@ func UnassignTeachersFromClassHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Teachers unassigned from class successfully.", "successful_unassignments": successfulUnassignments})
 }
 func GetTeachersByClassHandler(c *gin.Context) { // This was defined in teacher_handlers.go as well. Consolidating here.
-	classID := c.Param("classId")
+	classID := c.Param("id")
 	if classID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Class ID is required in path."})
 		return
@@ -542,7 +544,7 @@ func GetTeachersByClassHandler(c *gin.Context) { // This was defined in teacher_
 
 // --- Promote/Demote CR Handlers ---
 func PromoteStudentToCRHandler(c *gin.Context) {
-	userID := c.Param("userId")
+	userID := c.Param("id")
 	if userID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required in path."})
 		return
@@ -561,7 +563,7 @@ func PromoteStudentToCRHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User successfully promoted to CR.", "user": updatedUser})
 }
 func DemoteCRToStudentHandler(c *gin.Context) {
-	userID := c.Param("userId")
+	userID := c.Param("id")
 	if userID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required in path."})
 		return

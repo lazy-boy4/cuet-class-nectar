@@ -1,8 +1,8 @@
 package services
 
 import (
-	// "cuet-class-nectar/internal/models" // For User model if asserting DB update result
-	// "cuet-class-nectar/internal/supabase" // For mock setup
+	// "github.com/lazy-boy4/cuet-class-nectar/internal/models" // For User model if asserting DB update result
+	// "github.com/lazy-boy4/cuet-class-nectar/internal/supabase" // For mock setup
 	// "fmt" // Not used in this placeholder version
 	"mime/multipart" // Required for FileHeader type usage in test setup/placeholders
 	"os"
@@ -11,7 +11,7 @@ import (
 	// "bytes" // For creating a dummy io.Reader if needed for file mocks
 	// "io" // For io.Reader
 
-	"github.com/google/uuid"
+	_ "github.com/google/uuid"
 	// "github.com/stretchr/testify/assert"
 )
 

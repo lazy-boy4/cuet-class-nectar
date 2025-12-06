@@ -1,13 +1,13 @@
 package services
 
 import (
-	// "cuet-class-nectar/internal/models"
-	// "cuet-class-nectar/internal/supabase"
+	// "github.com/lazy-boy4/cuet-class-nectar/internal/models"
+	// "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	// "fmt"
 	"testing"
 	// "time"
 
-	"github.com/google/uuid"
+	_ "github.com/google/uuid"
 	// "github.com/stretchr/testify/assert"
 )
 

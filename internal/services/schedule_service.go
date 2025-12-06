@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/google/uuid" // For userID types
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
@@ -126,7 +127,7 @@ func UpdateScheduleEntry(entryID string, input models.ScheduleEntryInput, userID
 		return models.ScheduleEntry{}, fmt.Errorf("failed to update schedule entry ID %s: %w", entryID, err)
 	}
 	if len(results) == 0 {
-		return models.ScheduleEntry{}, fmt.Errorf("schedule entry update for ID %s returned no data (may not exist or RLS issue)")
+		return models.ScheduleEntry{}, fmt.Errorf("schedule entry update for ID %s returned no data (may not exist or RLS issue)", entryID)
 	}
 	return results[0], nil
 }

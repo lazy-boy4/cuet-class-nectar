@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  PieChart as PieChartIcon, 
-  BookOpen, 
-  CalendarDays, 
-  Bell, 
-  User, 
-  List, 
-  FileText, 
-  Clock 
+import {
+  PieChart as PieChartIcon,
+  BookOpen,
+  CalendarDays,
+  Bell,
+  User,
+  List,
+  FileText,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -18,8 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchEnrollments, fetchNotices, fetchAttendance } from "@/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { mockUsers } from "@/api/mockData/users";
 import { mockClasses } from "@/api/mockData/classes";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 interface AttendanceStats {
   present: number;
@@ -29,51 +30,102 @@ interface AttendanceStats {
   percentage: number;
 }
 
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  dept_code: string;
+  role: string;
+  student_id?: string;
+  batch?: string;
+  section?: string;
+}
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     document.title = "Student Dashboard - CUET Class Management System";
-    
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "student") {
-      navigate("/login");
-      return;
-    }
-    
-    const student = mockUsers.find(u => u.role === "student");
-    if (student) {
-      setCurrentUser(student);
-    }
-  }, [navigate]);
-  
+
+    const fetchUserProfile = async () => {
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+
+      if (!accessToken || !userRole || (userRole !== "student" && userRole !== "cr")) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/student/profile`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            localStorage.clear();
+            sessionStorage.clear();
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch profile");
+        }
+
+        const profileData: UserProfile = await response.json();
+        setCurrentUser(profileData);
+
+        // Update localStorage with fresh data
+        const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+        storage.setItem("userProfile", JSON.stringify({
+          name: profileData.full_name,
+          picture: "",
+        }));
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile. Please try logging in again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate, toast]);
+
   const { data: enrollments = [] } = useQuery({
     queryKey: ["studentEnrollments", currentUser?.id],
     queryFn: () => fetchEnrollments(currentUser?.id),
     enabled: !!currentUser,
   });
-  
+
   const { data: notices = [] } = useQuery({
     queryKey: ["studentNotices"],
     queryFn: () => fetchNotices(),
     enabled: !!currentUser,
   });
-  
+
   const enrolledClassIds = enrollments
     .filter(e => e.status === "approved")
     .map(e => e.classId);
-  
-  const enrolledClasses = mockClasses.filter(c => 
+
+  const enrolledClasses = mockClasses.filter(c =>
     enrolledClassIds.includes(c.id)
   );
-  
+
   const { data: attendanceData = [] } = useQuery({
     queryKey: ["studentAttendance", currentUser?.id, enrolledClassIds],
     queryFn: async () => {
       if (!currentUser || !enrolledClassIds.length) return [];
-      
+
       const allAttendance = [];
       for (const classId of enrolledClassIds) {
         const classAttendance = await fetchAttendance(classId);
@@ -83,13 +135,13 @@ const StudentDashboard = () => {
     },
     enabled: !!currentUser && enrolledClassIds.length > 0,
   });
-  
+
   const calculateAttendanceStats = (): AttendanceStats => {
     const present = attendanceData.filter(a => a.status === "present").length;
     const absent = attendanceData.filter(a => a.status === "absent").length;
     const late = attendanceData.filter(a => a.status === "late").length;
     const total = present + absent + late;
-    
+
     return {
       present,
       absent,
@@ -98,25 +150,25 @@ const StudentDashboard = () => {
       percentage: total > 0 ? Math.round((present + late * 0.5) / total * 100) : 0
     };
   };
-  
+
   const attendanceStats = calculateAttendanceStats();
-  
+
   const pieData = [
     { name: "Present", value: attendanceStats.present, color: "#10b981" },
     { name: "Late", value: attendanceStats.late, color: "#f59e0b" },
     { name: "Absent", value: attendanceStats.absent, color: "#ef4444" },
   ].filter(item => item.value > 0);
-  
+
   const recentNotices = notices
-    .filter(notice => 
-      notice.isGlobal || 
+    .filter(notice =>
+      notice.isGlobal ||
       (notice.classId && enrolledClassIds.includes(notice.classId))
     )
-    .sort((a, b) => 
+    .sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 3);
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -128,7 +180,7 @@ const StudentDashboard = () => {
 
   return (
     <DashboardLayout
-      title={`Welcome, ${currentUser?.name || "Student"}`}
+      title={`Welcome, ${currentUser?.full_name || "Student"}`}
       description="View your academic progress and class information"
     >
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -144,7 +196,7 @@ const StudentDashboard = () => {
                     <p className="text-sm text-white/70">
                       You haven't enrolled in any classes yet.
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => navigate("/student/enroll")}
                       className="mt-4 bg-gradient-to-r from-blue-600 to-blue-800"
                     >
@@ -154,7 +206,7 @@ const StudentDashboard = () => {
                 </Card>
               ) : (
                 enrolledClasses.map((cls) => (
-                  <Card 
+                  <Card
                     key={cls.id}
                     className="border-white/10 bg-white/5 hover:bg-white/[0.07] transition-all duration-300"
                   >
@@ -175,8 +227,8 @@ const StudentDashboard = () => {
                       </p>
                     </CardContent>
                     <CardFooter>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => navigate(`/student/classes/${cls.id}`)}
                       >
@@ -188,7 +240,7 @@ const StudentDashboard = () => {
               )}
             </div>
           </section>
-          
+
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Attendance Overview</h2>
             <Card className="border-white/10 bg-white/5 backdrop-blur-sm">
@@ -210,8 +262,8 @@ const StudentDashboard = () => {
                               label
                             >
                               {pieData.map((entry, index) => (
-                                <Cell 
-                                  key={`cell-${index}`} 
+                                <Cell
+                                  key={`cell-${index}`}
                                   fill={entry.color}
                                 />
                               ))}
@@ -226,7 +278,7 @@ const StudentDashboard = () => {
                       <p className="text-sm text-white/70">Overall Attendance</p>
                     </div>
                   </div>
-                  
+
                   <div className="md:col-span-2 p-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="rounded-lg bg-green-500/10 p-3 text-center">
@@ -248,12 +300,12 @@ const StudentDashboard = () => {
                         <p className="text-sm text-red-400/80">Absent</p>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4">
                       <p className="text-sm text-white/70">
                         Total Classes: <span className="text-white">{attendanceStats.total}</span>
                       </p>
-                      
+
                       <div className="mt-3">
                         {attendanceStats.total === 0 ? (
                           <p className="text-white/70">
@@ -276,7 +328,7 @@ const StudentDashboard = () => {
             </Card>
           </section>
         </div>
-        
+
         <div className="col-span-1 space-y-6">
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Quick Actions</h2>
@@ -297,7 +349,7 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -313,7 +365,7 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -329,7 +381,7 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="flex h-auto items-center justify-start rounded-none px-4 py-3 text-left hover:bg-white/10"
@@ -348,7 +400,7 @@ const StudentDashboard = () => {
               </div>
             </div>
           </section>
-          
+
           <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-white">Recent Notices</h2>
             <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">

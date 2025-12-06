@@ -7,12 +7,14 @@ import Footer from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
 const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   // Student form state
   const [studentCuetId, setStudentCuetId] = useState("");
   const [studentName, setStudentName] = useState("");
@@ -22,7 +24,7 @@ const Signup = () => {
   const [studentDepartment, setStudentDepartment] = useState("");
   const [studentBatch, setStudentBatch] = useState("");
   const [studentSection, setStudentSection] = useState("");
-  
+
   // Teacher form state
   const [teacherName, setTeacherName] = useState("");
   const [teacherEmail, setTeacherEmail] = useState("");
@@ -42,18 +44,18 @@ const Signup = () => {
   }, [studentCuetId]);
 
   const departments = [
-    "01 - Civil Engineering",
-    "02 - Electrical and Electronic Engineering",
-    "03 - Mechanical Engineering",
-    "04 - Computer Science and Engineering",
-    "05 - Urban & Regional Planning",
-    "06 - Architecture",
-    "07 - Petroleum and Mining Engineering",
-    "08 - Electronics and Telecommunication Engineering",
-    "09 - Mechatronics and Industrial Engineering",
-    "10 - Water Resources Engineering",
-    "11 - Biomedical Engineering",
-    "12 - Materials and Metallurgical Engineering",
+    { code: "01", name: "01 - Civil Engineering" },
+    { code: "02", name: "02 - Electrical and Electronic Engineering" },
+    { code: "03", name: "03 - Mechanical Engineering" },
+    { code: "04", name: "04 - Computer Science and Engineering" },
+    { code: "05", name: "05 - Urban & Regional Planning" },
+    { code: "06", name: "06 - Architecture" },
+    { code: "07", name: "07 - Petroleum and Mining Engineering" },
+    { code: "08", name: "08 - Electronics and Telecommunication Engineering" },
+    { code: "09", name: "09 - Mechatronics and Industrial Engineering" },
+    { code: "10", name: "10 - Water Resources Engineering" },
+    { code: "11", name: "11 - Biomedical Engineering" },
+    { code: "12", name: "12 - Materials and Metallurgical Engineering" },
   ];
 
   const handleStudentSignup = async (e: React.FormEvent) => {
@@ -66,36 +68,92 @@ const Signup = () => {
       if (studentPassword !== studentConfirmPassword) {
         throw new Error("Passwords don't match");
       }
-      
+
       if (studentPassword.length < 8) {
         throw new Error("Password must be at least 8 characters long");
       }
-      
+
       if (!/^\d{7}$/.test(studentCuetId)) {
         throw new Error("CUET ID must be a 7-digit number");
       }
-      
-      // In a real app, you would make an API call to create the user
-      console.log("Student signup data:", {
-        cuetId: studentCuetId,
-        name: studentName,
-        email: studentEmail,
-        department: studentDepartment,
-        batch: studentBatch,
-        section: studentSection,
+
+      if (!studentDepartment) {
+        throw new Error("Please select a department");
+      }
+
+      // Extract department code from selection
+      const deptCode = studentDepartment.split(" - ")[0];
+
+      // Call backend API
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: studentEmail,
+          password: studentPassword,
+          full_name: studentName,
+          role: "student",
+          student_id: studentCuetId,
+          dept_code: deptCode,
+          batch: studentBatch,
+          section: studentSection || "A",
+        }),
       });
-      
-      // Success toast
-      toast({
-        title: "Signup successful!",
-        description: "Your student account has been created. Please log in.",
-        duration: 3000,
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Signup failed");
+      }
+
+      // Auto-login after successful signup
+      const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: studentEmail,
+          password: studentPassword,
+        }),
       });
-      
-      // Redirect to login page
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+
+      const loginData = await loginResponse.json();
+
+      if (loginResponse.ok && loginData.access_token) {
+        // Store auth data
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("access_token", loginData.access_token);
+        localStorage.setItem("refresh_token", loginData.refresh_token);
+        localStorage.setItem("user_id", loginData.user_id);
+        localStorage.setItem("user_email", loginData.email);
+        localStorage.setItem("userRole", "student");
+        localStorage.setItem("userProfile", JSON.stringify({
+          name: studentName,
+          picture: "",
+        }));
+        localStorage.setItem("userFullName", studentName);
+
+        // Success toast
+        toast({
+          title: "Welcome to CUET Class Management!",
+          description: "Your account has been created and you're now logged in.",
+          duration: 3000,
+        });
+
+        // Redirect to student dashboard
+        navigate("/student/dashboard");
+      } else {
+        // Signup succeeded but auto-login failed - redirect to login
+        toast({
+          title: "Signup successful!",
+          description: "Please log in with your new credentials.",
+          duration: 3000,
+        });
+        setTimeout(() => navigate("/login"), 1500);
+      }
     } catch (error: any) {
       console.error("Signup error:", error);
       setError(error.message || "An error occurred during signup");
@@ -120,33 +178,89 @@ const Signup = () => {
       if (teacherPassword !== teacherConfirmPassword) {
         throw new Error("Passwords don't match");
       }
-      
+
       if (teacherPassword.length < 8) {
         throw new Error("Password must be at least 8 characters long");
       }
-      
+
       if (!teacherEmail.endsWith("@cuet.ac.bd")) {
         throw new Error("Please use your official CUET email");
       }
-      
-      // In a real app, you would make an API call to create the user
-      console.log("Teacher signup data:", {
-        name: teacherName,
-        email: teacherEmail,
-        department: teacherDepartment,
+
+      if (!teacherDepartment) {
+        throw new Error("Please select a department");
+      }
+
+      // Extract department code from selection
+      const deptCode = teacherDepartment.split(" - ")[0];
+
+      // Call backend API
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: teacherEmail,
+          password: teacherPassword,
+          full_name: teacherName,
+          role: "teacher",
+          dept_code: deptCode,
+        }),
       });
-      
-      // Success toast
-      toast({
-        title: "Signup successful!",
-        description: "Your teacher account has been created. Please log in.",
-        duration: 3000,
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Signup failed");
+      }
+
+      // Auto-login after successful signup
+      const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: teacherEmail,
+          password: teacherPassword,
+        }),
       });
-      
-      // Redirect to login page
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+
+      const loginData = await loginResponse.json();
+
+      if (loginResponse.ok && loginData.access_token) {
+        // Store auth data
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("access_token", loginData.access_token);
+        localStorage.setItem("refresh_token", loginData.refresh_token);
+        localStorage.setItem("user_id", loginData.user_id);
+        localStorage.setItem("user_email", loginData.email);
+        localStorage.setItem("userRole", "teacher");
+        localStorage.setItem("userProfile", JSON.stringify({
+          name: teacherName,
+          picture: "",
+        }));
+        localStorage.setItem("userFullName", teacherName);
+
+        // Success toast
+        toast({
+          title: "Welcome to CUET Class Management!",
+          description: "Your teacher account has been created and you're now logged in.",
+          duration: 3000,
+        });
+
+        // Redirect to teacher dashboard
+        navigate("/teacher/dashboard");
+      } else {
+        // Signup succeeded but auto-login failed - redirect to login
+        toast({
+          title: "Signup successful!",
+          description: "Please log in with your new credentials.",
+          duration: 3000,
+        });
+        setTimeout(() => navigate("/login"), 1500);
+      }
     } catch (error: any) {
       console.error("Signup error:", error);
       setError(error.message || "An error occurred during signup");
@@ -186,7 +300,7 @@ const Signup = () => {
                   <TabsTrigger value="student">Student</TabsTrigger>
                   <TabsTrigger value="teacher">Teacher</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="student">
                   <form onSubmit={handleStudentSignup} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -280,12 +394,12 @@ const Signup = () => {
                           value={studentDepartment}
                           onChange={(e) => setStudentDepartment(e.target.value)}
                           required
-                          className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-md border border-white/10 bg-[#0f172a] px-4 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 [&>option]:bg-[#0f172a] [&>option]:text-white"
                         >
-                          <option value="" disabled>Select Department</option>
+                          <option value="" disabled className="bg-[#0f172a] text-white/60">Select Department</option>
                           {departments.map((dept) => (
-                            <option key={dept} value={dept}>
-                              {dept}
+                            <option key={dept.code} value={dept.name} className="bg-[#0f172a] text-white">
+                              {dept.name}
                             </option>
                           ))}
                         </select>
@@ -338,7 +452,7 @@ const Signup = () => {
                     </div>
                   </form>
                 </TabsContent>
-                
+
                 <TabsContent value="teacher">
                   <form onSubmit={handleTeacherSignup} className="space-y-4">
                     <div className="space-y-2">
@@ -414,12 +528,12 @@ const Signup = () => {
                         value={teacherDepartment}
                         onChange={(e) => setTeacherDepartment(e.target.value)}
                         required
-                        className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-white/10 bg-[#0f172a] px-4 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 [&>option]:bg-[#0f172a] [&>option]:text-white"
                       >
-                        <option value="" disabled>Select Department</option>
+                        <option value="" disabled className="bg-[#0f172a] text-white/60">Select Department</option>
                         {departments.map((dept) => (
-                          <option key={dept} value={dept}>
-                            {dept}
+                          <option key={dept.code} value={dept.name} className="bg-[#0f172a] text-white">
+                            {dept.name}
                           </option>
                         ))}
                       </select>

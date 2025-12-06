@@ -11,19 +11,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import ProfilePrivacySettings from "@/components/ProfilePrivacySettings";
-import { User, Mail, GraduationCap, Building, Camera, Settings, Shield } from "lucide-react";
-import { mockUsers } from "@/api/mockData/users";
+import { User, Mail, GraduationCap, Building, Camera, Settings, Shield, IdCard } from "lucide-react";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  dept_code: string;
+  role: string;
+  student_id?: string;
+  batch?: string;
+  section?: string;
+  picture_url?: string;
+  created_at?: string;
+}
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     department: "",
-    session: "",
+    batch: "",
     section: "",
     bio: "",
     interests: "",
@@ -34,41 +49,112 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
-    if (!userRole || userRole !== "student") {
-      navigate("/login");
-      return;
-    }
-    
-    const student = mockUsers.find(u => u.role === "student");
-    if (student) {
-      setCurrentUser(student);
-      setFormData({
-        name: student.name,
-        email: student.email,
-        department: student.department || "",
-        session: student.session || "",
-        section: student.section || "",
-        bio: "Computer Science student passionate about web development and AI.",
-        interests: "Web Development, Machine Learning, Mobile Apps",
-        phone: "+880-1234-567890",
-        linkedIn: "linkedin.com/in/username",
-        github: "github.com/username",
-        website: "personal-website.com",
-      });
-    }
+    const fetchProfile = async () => {
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+      const userRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
+
+      if (!accessToken || !userRole) {
+        navigate("/login");
+        return;
+      }
+
+      if (userRole !== "student" && userRole !== "cr") {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/student/profile`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Token expired, redirect to login
+            localStorage.clear();
+            sessionStorage.clear();
+            navigate("/login");
+            return;
+          }
+          throw new Error("Failed to fetch profile");
+        }
+
+        const data: UserProfile = await response.json();
+        setCurrentUser(data);
+
+        // Update localStorage with latest data
+        const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+        storage.setItem("userProfile", JSON.stringify({
+          name: data.full_name,
+          picture: data.picture_url || "",
+        }));
+        storage.setItem("userRole", data.role);
+
+        setFormData({
+          name: data.full_name || "",
+          email: data.email || "",
+          department: data.dept_code || "",
+          batch: data.batch || "",
+          section: data.section || "",
+          bio: "",
+          interests: "",
+          phone: "",
+          linkedIn: "",
+          github: "",
+          website: "",
+        });
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, [navigate]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSaving(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setCurrentUser({ ...currentUser, ...formData });
+      const accessToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
+
+      const response = await fetch(`${API_BASE_URL}/api/student/profile`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: formData.name,
+          section: formData.section,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const updatedData = await response.json();
+      setCurrentUser(updatedData);
       setIsEditing(false);
-      
+
+      // Update localStorage
+      const storage = localStorage.getItem("access_token") ? localStorage : sessionStorage;
+      storage.setItem("userProfile", JSON.stringify({
+        name: updatedData.full_name,
+        picture: updatedData.picture_url || "",
+      }));
+
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
@@ -80,29 +166,65 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({
-      name: currentUser?.name || "",
-      email: currentUser?.email || "",
-      department: currentUser?.department || "",
-      session: currentUser?.session || "",
-      section: currentUser?.section || "",
-      bio: "Computer Science student passionate about web development and AI.",
-      interests: "Web Development, Machine Learning, Mobile Apps",
-      phone: "+880-1234-567890",
-      linkedIn: "linkedin.com/in/username",
-      github: "github.com/username",
-      website: "personal-website.com",
-    });
+    if (currentUser) {
+      setFormData({
+        name: currentUser.full_name || "",
+        email: currentUser.email || "",
+        department: currentUser.dept_code || "",
+        batch: currentUser.batch || "",
+        section: currentUser.section || "",
+        bio: "",
+        interests: "",
+        phone: "",
+        linkedIn: "",
+        github: "",
+        website: "",
+      });
+    }
     setIsEditing(false);
   };
 
+  const getDepartmentName = (code: string): string => {
+    const departments: { [key: string]: string } = {
+      "01": "Civil Engineering",
+      "02": "Electrical and Electronic Engineering",
+      "03": "Mechanical Engineering",
+      "04": "Computer Science and Engineering",
+      "05": "Urban & Regional Planning",
+      "06": "Architecture",
+      "07": "Petroleum and Mining Engineering",
+      "08": "Electronics and Telecommunication Engineering",
+      "09": "Mechatronics and Industrial Engineering",
+      "10": "Water Resources Engineering",
+      "11": "Biomedical Engineering",
+      "12": "Materials and Metallurgical Engineering",
+    };
+    return departments[code] || code;
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Profile" description="">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-white">Loading profile...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!currentUser) {
-    return <DashboardLayout title="Profile" description=""><div>Loading...</div></DashboardLayout>;
+    return (
+      <DashboardLayout title="Profile" description="">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-white">Failed to load profile</div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -117,9 +239,9 @@ const Profile = () => {
             <div className="flex flex-col items-center space-y-4">
               <div className="relative">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={currentUser.profileImage} alt={currentUser.name} />
+                  <AvatarImage src={currentUser.picture_url} alt={currentUser.full_name} />
                   <AvatarFallback className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-2xl">
-                    {currentUser.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                    {currentUser.full_name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <Button
@@ -130,11 +252,11 @@ const Profile = () => {
                   <Camera className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div>
-                <CardTitle className="text-white text-xl">{currentUser.name}</CardTitle>
+                <CardTitle className="text-white text-xl">{currentUser.full_name}</CardTitle>
                 <CardDescription className="text-white/70">{currentUser.email}</CardDescription>
-                {currentUser.isClassRepresentative && (
+                {currentUser.role === "cr" && (
                   <Badge variant="outline" className="mt-2 bg-purple-500/10 text-purple-400">
                     Class Representative
                   </Badge>
@@ -165,8 +287,8 @@ const Profile = () => {
                   <CardDescription>Manage your personal information and details</CardDescription>
                 </div>
                 {!isEditing && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setIsEditing(true)}
                   >
                     <Settings className="w-4 h-4 mr-2" />
@@ -195,71 +317,23 @@ const Profile = () => {
                           id="email"
                           type="email"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           className="bg-white/5 border-white/10 text-white"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bio" className="text-white">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={formData.bio}
-                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                        placeholder="Tell others about yourself..."
-                        className="bg-white/5 border-white/10 text-white"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="interests" className="text-white">Interests & Skills</Label>
-                      <Input
-                        id="interests"
-                        value={formData.interests}
-                        onChange={(e) => setFormData({ ...formData, interests: e.target.value })}
-                        placeholder="Separate with commas (e.g., Web Development, AI, etc.)"
-                        className="bg-white/5 border-white/10 text-white"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="department" className="text-white">Department</Label>
-                        <Input
-                          id="department"
-                          value={formData.department}
-                          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                          className="bg-white/5 border-white/10 text-white"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-white">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="bg-white/5 border-white/10 text-white"
+                          disabled
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="session" className="text-white">Session</Label>
+                        <Label htmlFor="batch" className="text-white">Batch</Label>
                         <Input
-                          id="session"
-                          value={formData.session}
-                          onChange={(e) => setFormData({ ...formData, session: e.target.value })}
-                          placeholder="2023-24"
+                          id="batch"
+                          value={formData.batch}
                           className="bg-white/5 border-white/10 text-white"
+                          disabled
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="section" className="text-white">Section</Label>
                         <Input
@@ -272,59 +346,21 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h4 className="text-white font-medium">Social Links</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="linkedIn" className="text-white">LinkedIn</Label>
-                          <Input
-                            id="linkedIn"
-                            value={formData.linkedIn}
-                            onChange={(e) => setFormData({ ...formData, linkedIn: e.target.value })}
-                            placeholder="linkedin.com/in/username"
-                            className="bg-white/5 border-white/10 text-white"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="github" className="text-white">GitHub</Label>
-                          <Input
-                            id="github"
-                            value={formData.github}
-                            onChange={(e) => setFormData({ ...formData, github: e.target.value })}
-                            placeholder="github.com/username"
-                            className="bg-white/5 border-white/10 text-white"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="website" className="text-white">Website</Label>
-                          <Input
-                            id="website"
-                            value={formData.website}
-                            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                            placeholder="your-website.com"
-                            className="bg-white/5 border-white/10 text-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="flex justify-end space-x-2 pt-4">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={handleCancel}
-                        disabled={isLoading}
+                        disabled={isSaving}
                       >
                         Cancel
                       </Button>
                       <Button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isSaving}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {isLoading ? "Saving..." : "Save Changes"}
+                        {isSaving ? "Saving..." : "Save Changes"}
                       </Button>
                     </div>
                   </form>
@@ -334,7 +370,7 @@ const Profile = () => {
                       <User className="h-5 w-5 text-blue-400" />
                       <div>
                         <p className="text-sm text-white/70">Full Name</p>
-                        <p className="text-white">{currentUser.name}</p>
+                        <p className="text-white">{currentUser.full_name}</p>
                       </div>
                     </div>
 
@@ -347,10 +383,18 @@ const Profile = () => {
                     </div>
 
                     <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                      <IdCard className="h-5 w-5 text-yellow-400" />
+                      <div>
+                        <p className="text-sm text-white/70">Student ID</p>
+                        <p className="text-white">{currentUser.student_id || "Not specified"}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
                       <Building className="h-5 w-5 text-purple-400" />
                       <div>
                         <p className="text-sm text-white/70">Department</p>
-                        <p className="text-white">{currentUser.department || "Not specified"}</p>
+                        <p className="text-white">{getDepartmentName(currentUser.dept_code)}</p>
                       </div>
                     </div>
 
@@ -358,8 +402,8 @@ const Profile = () => {
                       <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
                         <GraduationCap className="h-5 w-5 text-orange-400" />
                         <div>
-                          <p className="text-sm text-white/70">Session</p>
-                          <p className="text-white">{currentUser.session || "Not specified"}</p>
+                          <p className="text-sm text-white/70">Batch</p>
+                          <p className="text-white">{currentUser.batch || "Not specified"}</p>
                         </div>
                       </div>
 

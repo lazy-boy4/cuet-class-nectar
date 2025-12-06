@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 )
@@ -79,7 +80,7 @@ func UpdateCourse(id string, courseInput models.CourseInput) (models.Course, err
 		return models.Course{}, fmt.Errorf("failed to update course ID %s: %w", id, err)
 	}
 	if len(results) == 0 {
-		return models.Course{}, fmt.Errorf("course update for ID %s returned no data (it may not exist or RLS issue)")
+		return models.Course{}, fmt.Errorf("course update for ID %s returned no data (it may not exist or RLS issue)", id)
 	}
 	return results[0], nil
 }

@@ -1,23 +1,11 @@
 package services
 
 import (
-	"cuet-class-nectar/internal/models"
-	// "cuet-class-nectar/internal/supabase" // For mock setup
-	// "fmt"
 	"testing"
-	// "time"
-
-	"github.com/google/uuid"
-	// "github.com/stretchr/testify/assert"
 )
 
-var testEventCRID uuid.UUID
-var testEventClassID int = 1
-
-func setupClassEventTests() {
-	testEventCRID, _ = uuid.NewRandom()
-	t.Log("setupClassEventTests: Placeholder.") // Added t.Log to use testing package
-}
+// --- Test Cases for Class Event Service ---
+// Note: All tests are placeholders and require proper Supabase client mocking.
 
 func TestCreateClassEvent_Success(t *testing.T) {
 	t.Log("TestCreateClassEvent_Success: Placeholder.")

@@ -2,8 +2,10 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
+
 	// "time" // Not strictly needed here unless doing manual timestamping
 
 	"github.com/google/uuid"
@@ -123,7 +125,7 @@ func UpdateNotice(noticeID string, content string, userID uuid.UUID) (models.Not
 		return models.Notice{}, fmt.Errorf("failed to update notice %s: %w", noticeID, err)
 	}
 	if len(results) == 0 {
-		return models.Notice{}, fmt.Errorf("notice update for ID %s returned no data")
+		return models.Notice{}, fmt.Errorf("notice update for ID %s returned no data", noticeID)
 	}
 	return results[0], nil
 }

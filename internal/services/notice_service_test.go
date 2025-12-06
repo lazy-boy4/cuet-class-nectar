@@ -1,23 +1,11 @@
 package services
 
 import (
-	"cuet-class-nectar/internal/models"
-	// "cuet-class-nectar/internal/supabase" // For mock setup
-	// "fmt"
 	"testing"
-	// "time"
-
-	"github.com/google/uuid"
-	// "github.com/stretchr/testify/assert"
 )
 
-var testAuthorID uuid.UUID       // This was defined in the original prompt, keep if used by setup
-var testClassIDForNotice int = 1 // This was defined in the original prompt
-
-func setupNoticeTests() { // This was defined in the original prompt
-	testAuthorID, _ = uuid.NewRandom()
-	t.Log("setupNoticeTests: Placeholder.") // Added t.Log to use testing package
-}
+// --- Test Cases for Notice Service ---
+// Note: All tests are placeholders and require proper Supabase client mocking.
 
 func TestCreateNotice_ClassNotice_Success(t *testing.T) {
 	t.Log("TestCreateNotice_ClassNotice_Success: Placeholder.")

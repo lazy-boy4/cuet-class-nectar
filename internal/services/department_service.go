@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
 	// "context" // nedpals/supabase-go uses context for Auth, not always for DB
@@ -85,7 +86,7 @@ func UpdateDepartment(id string, deptInput models.DepartmentInput) (models.Depar
 		return models.Department{}, fmt.Errorf("failed to update department ID %s: %w", id, err)
 	}
 	if len(results) == 0 {
-		return models.Department{}, fmt.Errorf("department update for ID %s returned no data (it may not exist or RLS/Prefer header issue)")
+		return models.Department{}, fmt.Errorf("department update for ID %s returned no data (it may not exist or RLS/Prefer header issue)", id)
 	}
 	return results[0], nil
 }

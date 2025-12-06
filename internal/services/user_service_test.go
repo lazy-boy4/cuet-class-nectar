@@ -1,11 +1,11 @@
 package services
 
 import (
-	"cuet-class-nectar/internal/models"
-	// sbClient "cuet-class-nectar/internal/supabase" // For mock setup
-	"fmt"
+	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
+	// sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase" // For mock setup
 	"strings" // Keep for AdminCreateUser/AdminDeleteUser error checks
 	"testing"
+
 	// "time"
 
 	"github.com/google/uuid"
@@ -51,6 +51,7 @@ func TestAdminCreateUser_Stubbed(t *testing.T) {
 	}
 	_, err := AdminCreateUser(input)
 	expectedErrorMsg := "AdminCreateUser functionality is not supported by the current Supabase Go client (nedpals/supabase-go@v0.5.0)"
+	_ = expectedErrorMsg // Prevent unused variable error
 	// This test checks the stub. The service function itself might check for env vars first if not stubbed higher up.
 	// The stub in user_service.go for AdminCreateUser directly returns the "not supported" error.
 	if err == nil {
@@ -65,6 +66,7 @@ func TestAdminDeleteUser_Stubbed(t *testing.T) {
 	userID, _ := uuid.NewRandom()
 	err := AdminDeleteUser(userID.String())
 	expectedErrorMsg := "AdminDeleteUser functionality is not supported by the current Supabase Go client (nedpals/supabase-go@v0.5.0)"
+	_ = expectedErrorMsg // Prevent unused variable error
 	if err == nil {
 		t.Errorf("AdminDeleteUser did not return an error as expected for a stubbed function.")
 	} else if !strings.Contains(err.Error(), "not supported") {
@@ -84,7 +86,7 @@ func TestGetUserRole_UserNotFound(t *testing.T) {
 // Testing BulkUpsertStudentProfiles
 func TestBulkUpsertStudentProfiles_EmptyInput(t *testing.T) {
 	created, updated, errors := BulkUpsertStudentProfiles([]models.BulkUploadStudentData{})
-	if len(errors) == 0 || !strings.Contains(errors[0].Error(), "no valid attendance records provided") { // Error message from attendance, should be "no student data"
+	if len(errors) == 0 || !strings.Contains(errors[0].Error(), "no student data provided") { // Error message from attendance, should be "no student data"
 		t.Errorf("Expected 'no student data provided' error, got: %v", errors) // Corrected expected error
 	}
 	if created != 0 || updated != 0 {

@@ -6,6 +6,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,32 +27,80 @@ const Login = () => {
     setError("");
 
     try {
-      // Frontend-only mock login for demo purposes
-      // In a real app, this would be a request to your backend
-      console.log("Logging in with:", { email, password, rememberMe });
-      
-      // Simple role check based on email domain for demo
-      let userRole = "student";
-      if (email.includes("@cuet.ac.bd") && !email.includes("@student.cuet.ac.bd")) {
-        userRole = "teacher";
+      // Call backend API
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
       }
-      // Admin check (you can use a specific email for testing)
-      if (email === "admin@cuet.ac.bd") {
-        userRole = "admin";
-      }
-      
-      // Store login state in localStorage or sessionStorage based on rememberMe
+
+      // Store auth data
       const storage = rememberMe ? localStorage : sessionStorage;
       storage.setItem("isLoggedIn", "true");
-      storage.setItem("userRole", userRole);
-      
+      storage.setItem("access_token", data.access_token);
+      storage.setItem("refresh_token", data.refresh_token);
+      storage.setItem("user_id", data.user_id);
+      storage.setItem("user_email", data.email);
+
+      // Fetch user profile to get role and other details
+      const profileResponse = await fetch(`${API_BASE_URL}/api/student/profile`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${data.access_token}`,
+        },
+      });
+
+      let userRole = "student"; // Default role
+      let userProfile = { name: "", picture: "" };
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        userRole = profileData.role || "student";
+        userProfile = {
+          name: profileData.full_name || profileData.email,
+          picture: profileData.picture_url || "",
+        };
+
+        // Store complete profile data
+        storage.setItem("userProfile", JSON.stringify(userProfile));
+        storage.setItem("userRole", userRole);
+        storage.setItem("userFullName", profileData.full_name || "");
+        storage.setItem("userDepartment", profileData.dept_code || "");
+        storage.setItem("userBatch", profileData.batch || "");
+        storage.setItem("userSection", profileData.section || "");
+        storage.setItem("userStudentId", profileData.student_id || "");
+      } else {
+        // Fallback: try to infer role from email
+        if (email.includes("@student.cuet.ac.bd")) {
+          userRole = "student";
+        } else if (email.includes("@cuet.ac.bd")) {
+          userRole = "teacher";
+        }
+        if (email === "admin@cuet.ac.bd") {
+          userRole = "admin";
+        }
+        storage.setItem("userRole", userRole);
+        storage.setItem("userProfile", JSON.stringify({ name: email.split("@")[0], picture: "" }));
+      }
+
       // Success toast
       toast({
         title: "Login successful",
         description: `Welcome back to CUET Class Management System!`,
         duration: 3000,
       });
-      
+
       // Redirect based on role
       setTimeout(() => {
         switch (userRole) {
@@ -63,13 +113,13 @@ const Login = () => {
           default:
             navigate("/student/dashboard");
         }
-      }, 1500);
-    } catch (error) {
+      }, 1000);
+    } catch (error: any) {
       console.error("Login error:", error);
-      setError("Invalid email or password. Please try again.");
+      setError(error.message || "Invalid email or password. Please try again.");
       toast({
         title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        description: error.message || "Invalid email or password. Please try again.",
         variant: "destructive",
         duration: 3000,
       });

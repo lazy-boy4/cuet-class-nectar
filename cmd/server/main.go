@@ -132,7 +132,7 @@ func main() {
 				classAdm.GET("/:id", handlers.GetClassHandler)
 				classAdm.PUT("/:id", handlers.UpdateClassHandler)
 				classAdm.DELETE("/:id", handlers.DeleteClassHandler)
-				classAdm.GET("/:classId/teachers", handlers.GetTeachersByClassHandler)
+				classAdm.GET("/:id/teachers", handlers.GetTeachersByClassHandler)
 			}
 			userAdm := adminRoutes.Group("/users")
 			{
@@ -141,8 +141,8 @@ func main() {
 				userAdm.GET("/:id", handlers.GetUserHandler)
 				userAdm.PUT("/:id", handlers.AdminUpdateUserHandler)
 				userAdm.DELETE("/:id", handlers.AdminDeleteUserHandler)
-				userAdm.POST("/:userId/promote-cr", handlers.PromoteStudentToCRHandler)
-				userAdm.POST("/:userId/demote-cr", handlers.DemoteCRToStudentHandler)
+				userAdm.POST("/:id/promote-cr", handlers.PromoteStudentToCRHandler)
+				userAdm.POST("/:id/demote-cr", handlers.DemoteCRToStudentHandler)
 			}
 			adminRoutes.POST("/students/bulk-upload-profiles", handlers.BulkUploadStudentsHandler)
 			ctAssignAdm := adminRoutes.Group("/class-teacher-assignments")

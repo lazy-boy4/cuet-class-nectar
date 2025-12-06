@@ -2,9 +2,10 @@ package services
 
 import (
 	"fmt"
+	"strings" // For error messages or constructing queries
+
 	"github.com/lazy-boy4/cuet-class-nectar/internal/models"
 	sbClient "github.com/lazy-boy4/cuet-class-nectar/internal/supabase"
-	"strings" // For error messages or constructing queries
 
 	"github.com/google/uuid"
 )
@@ -12,12 +13,6 @@ import (
 // UpsertAttendanceRecords allows a teacher to record or update attendance for multiple students in a class on a specific date.
 // It uses Supabase's upsert capability based on the unique constraint (class_id, student_id, date).
 func UpsertAttendanceRecords(classID int, date string, records []models.StudentAttendance, markerID uuid.UUID) (processedCount int, serviceErrors []error) {
-	client := sbClient.GetClient()
-	if client == nil {
-		serviceErrors = append(serviceErrors, fmt.Errorf("Supabase client not initialized"))
-		return
-	}
-
 	var recordsToUpsert []map[string]interface{}
 	for _, rec := range records {
 		// Basic validation for status, though model binding should handle oneof
@@ -41,6 +36,12 @@ func UpsertAttendanceRecords(classID int, date string, records []models.StudentA
 			return 0, serviceErrors
 		}
 		serviceErrors = append(serviceErrors, fmt.Errorf("no valid attendance records provided to upsert"))
+		return
+	}
+
+	client := sbClient.GetClient()
+	if client == nil {
+		serviceErrors = append(serviceErrors, fmt.Errorf("Supabase client not initialized"))
 		return
 	}
 
