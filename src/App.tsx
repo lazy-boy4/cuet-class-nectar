@@ -39,11 +39,17 @@ import AdminDashboardPage from "./pages/admin/AdminDashboard";
 
 // Teacher routes
 import TeacherClassManagement from "./pages/teacher/ClassManagement";
+import MyAssignedClasses from "./pages/teacher/MyAssignedClasses";
+import ClassroomAttendance from "./pages/teacher/ClassroomAttendance";
 
 // Student routes
 import StudentProfile from "./pages/student/Profile";
 import Enroll from "./pages/student/Enroll";
 import ClassDetails from "./pages/student/ClassDetails";
+import CreateClassroom from "./pages/student/CreateClassroom";
+import JoinClassroom from "./pages/student/JoinClassroom";
+import MyClassrooms from "./pages/student/MyClassrooms";
+import ClassroomDetail from "./pages/student/ClassroomDetail";
 
 // Shared routes
 import NoticeBoard from "./pages/NoticeBoard";
@@ -92,10 +98,16 @@ function App() {
             <Route path="/student/profile" element={<StudentProfile />} />
             <Route path="/student/enroll" element={<Enroll />} />
             <Route path="/student/classes/:classId" element={<ClassDetails />} />
+            <Route path="/student/classrooms" element={<MyClassrooms />} />
+            <Route path="/student/classrooms/create" element={<CreateClassroom />} />
+            <Route path="/student/classrooms/join" element={<JoinClassroom />} />
+            <Route path="/student/classrooms/:classroomId" element={<ClassroomDetail />} />
             
             {/* Teacher routes */}
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher/classes/:classId" element={<TeacherClassManagement />} />
+            <Route path="/teacher/assigned-classes" element={<MyAssignedClasses />} />
+            <Route path="/teacher/classroom/:classroomId/attendance" element={<ClassroomAttendance />} />
             
             {/* Admin routes */}
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
