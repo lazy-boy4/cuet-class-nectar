@@ -104,10 +104,10 @@ export interface Enrollment {
   classId: string;
   status: 'pending' | 'approved' | 'rejected';
   enrolledAt: string;
-  className?: string; // Added for mock data compatibility
-  studentName?: string; // Added for mock data compatibility
-  requestDate?: string; // Added for mock data compatibility
-  responseDate?: string; // Added for mock data compatibility
+  className?: string;
+  studentName?: string;
+  requestDate?: string;
+  responseDate?: string;
 }
 
 // Auth response model
@@ -116,4 +116,100 @@ export interface AuthResponse {
   token?: string;
   user?: User;
   message?: string;
+}
+
+// ========== CLASSROOM FEATURE TYPES ==========
+
+// Classroom model (Google Classroom-like)
+export interface Classroom {
+  id: string;
+  name: string;
+  code: string; // 6-character unique join code
+  departmentId: string;
+  departmentCode?: string;
+  departmentName?: string;
+  section: string;
+  session: string;
+  crId: string;
+  crName?: string;
+  createdAt: string;
+  memberCount?: number;
+  courseCount?: number;
+}
+
+// Classroom Course (courses linked to a classroom)
+export interface ClassroomCourse {
+  id: string;
+  classroomId: string;
+  courseId?: string;
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  teacherIds: string[];
+  teachers?: ClassroomTeacher[];
+}
+
+// Classroom Teacher (teacher assigned to a course in classroom)
+export interface ClassroomTeacher {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+}
+
+// Classroom Member (student in a classroom)
+export interface ClassroomMember {
+  id: string;
+  classroomId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  studentIdNumber?: string;
+  joinedAt: string;
+  status: 'active' | 'pending' | 'removed';
+  isCR?: boolean;
+}
+
+// CR Attendance Permission (daily permission for CR to take attendance)
+export interface CRAttendancePermission {
+  id: string;
+  classroomId: string;
+  courseId: string;
+  crId: string;
+  grantedBy: string; // teacher ID
+  grantedByName?: string;
+  date: string; // YYYY-MM-DD
+  createdAt: string;
+}
+
+// Classroom Attendance Record
+export interface ClassroomAttendance {
+  id: string;
+  classroomId: string;
+  courseId: string;
+  studentId: string;
+  studentName?: string;
+  studentIdNumber?: string;
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  markedBy: string; // teacher or CR ID
+  markedByName?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Teacher's Assigned Classroom view
+export interface TeacherAssignedClassroom {
+  id: string;
+  classroomId: string;
+  classroomName: string;
+  classroomCode: string;
+  section: string;
+  session: string;
+  departmentName: string;
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  studentCount: number;
+  crName?: string;
 }
