@@ -56,6 +56,30 @@ export default {
           dark: "#020617",
           blue: "#3b82f6",
           gold: "#facc15"
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        chart: {
+          present: "hsl(var(--chart-present))",
+          absent: "hsl(var(--chart-absent))",
+          late: "hsl(var(--chart-late))",
+        },
+        icon: {
+          blue: "hsl(var(--icon-blue))",
+          purple: "hsl(var(--icon-purple))",
+          orange: "hsl(var(--icon-orange))",
+          green: "hsl(var(--icon-green))",
+          teal: "hsl(var(--icon-teal))",
         }
       },
       borderRadius: {
