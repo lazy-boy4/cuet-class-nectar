@@ -5,8 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -21,67 +20,89 @@ const Login = () => {
     document.title = "Login - CUET Class Management System";
   }, []);
 
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Get user role from users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        
+        const role = userData?.role || 'student';
+        redirectByRole(role);
+      }
+    };
+    checkSession();
+  }, []);
+
+  const redirectByRole = (role: string) => {
+    switch (role) {
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+      case "teacher":
+        navigate("/teacher/dashboard");
+        break;
+      default:
+        navigate("/student/dashboard");
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      // Call backend API
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      // Sign in with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+      if (authError) {
+        throw new Error(authError.message);
       }
 
-      // Store auth data
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem("isLoggedIn", "true");
-      storage.setItem("access_token", data.access_token);
-      storage.setItem("refresh_token", data.refresh_token);
-      storage.setItem("user_id", data.user_id);
-      storage.setItem("user_email", data.email);
+      if (!authData.session || !authData.user) {
+        throw new Error("Login failed - no session created");
+      }
 
-      // Fetch user profile to get role and other details
-      const profileResponse = await fetch(`${API_BASE_URL}/api/student/profile`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${data.access_token}`,
-        },
-      });
+      // Fetch user profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
 
-      let userRole = "student"; // Default role
+      let userRole = "student";
       let userProfile = { name: "", picture: "" };
 
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        userRole = profileData.role || "student";
+      if (userData) {
+        userRole = userData.role || "student";
         userProfile = {
-          name: profileData.full_name || profileData.email,
-          picture: profileData.picture_url || "",
+          name: userData.full_name || userData.email,
+          picture: userData.picture_url || "",
         };
 
-        // Store complete profile data
+        // Store profile data in localStorage
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem("isLoggedIn", "true");
+        storage.setItem("user_id", authData.user.id);
+        storage.setItem("user_email", authData.user.email || "");
         storage.setItem("userProfile", JSON.stringify(userProfile));
         storage.setItem("userRole", userRole);
-        storage.setItem("userFullName", profileData.full_name || "");
-        storage.setItem("userDepartment", profileData.dept_code || "");
-        storage.setItem("userBatch", profileData.batch || "");
-        storage.setItem("userSection", profileData.section || "");
-        storage.setItem("userStudentId", profileData.student_id || "");
+        storage.setItem("userFullName", userData.full_name || "");
+        storage.setItem("userDepartment", userData.dept_code || "");
+        storage.setItem("userBatch", userData.batch || "");
+        storage.setItem("userSection", userData.section || "");
+        storage.setItem("userStudentId", userData.student_id || "");
       } else {
-        // Fallback: try to infer role from email
+        // Fallback: infer role from email
         if (email.includes("@student.cuet.ac.bd")) {
           userRole = "student";
         } else if (email.includes("@cuet.ac.bd")) {
@@ -90,36 +111,37 @@ const Login = () => {
         if (email === "admin@cuet.ac.bd") {
           userRole = "admin";
         }
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem("isLoggedIn", "true");
         storage.setItem("userRole", userRole);
         storage.setItem("userProfile", JSON.stringify({ name: email.split("@")[0], picture: "" }));
       }
 
-      // Success toast
       toast({
         title: "Login successful",
         description: `Welcome back to CUET Class Management System!`,
         duration: 3000,
       });
 
-      // Redirect based on role
       setTimeout(() => {
-        switch (userRole) {
-          case "admin":
-            navigate("/admin/dashboard");
-            break;
-          case "teacher":
-            navigate("/teacher/dashboard");
-            break;
-          default:
-            navigate("/student/dashboard");
-        }
-      }, 1000);
+        redirectByRole(userRole);
+      }, 500);
     } catch (error: any) {
       console.error("Login error:", error);
-      setError(error.message || "Invalid email or password. Please try again.");
+      let errorMessage = "Invalid email or password. Please try again.";
+      
+      if (error.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password.";
+      } else if (error.message?.includes("Email not confirmed")) {
+        errorMessage = "Please confirm your email before logging in.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       toast({
         title: "Login failed",
-        description: error.message || "Invalid email or password. Please try again.",
+        description: errorMessage,
         variant: "destructive",
         duration: 3000,
       });
