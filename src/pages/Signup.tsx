@@ -6,8 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { supabase } from "@/integrations/supabase/client";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -84,51 +83,55 @@ const Signup = () => {
       // Extract department code from selection
       const deptCode = studentDepartment.split(" - ")[0];
 
-      // Call backend API
-      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: studentEmail,
+        password: studentPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            full_name: studentName,
+            role: 'student',
+          }
+        }
+      });
+
+      if (authError) {
+        if (authError.message.includes("User already registered")) {
+          throw new Error("An account with this email already exists. Please login instead.");
+        }
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error("Signup failed - please try again");
+      }
+
+      // Insert user profile into users table
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
           email: studentEmail,
-          password: studentPassword,
           full_name: studentName,
-          role: "student",
+          role: 'student',
           student_id: studentCuetId,
           dept_code: deptCode,
           batch: studentBatch,
-          section: studentSection || "A",
-        }),
-      });
+          section: studentSection || 'A',
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Signup failed");
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        // Don't throw - auth user was created, profile might already exist
       }
 
-      // Auto-login after successful signup
-      const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: studentEmail,
-          password: studentPassword,
-        }),
-      });
-
-      const loginData = await loginResponse.json();
-
-      if (loginResponse.ok && loginData.access_token) {
-        // Store auth data
+      // Check if email confirmation is required
+      if (authData.session) {
+        // Auto-logged in (email confirmation disabled)
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("access_token", loginData.access_token);
-        localStorage.setItem("refresh_token", loginData.refresh_token);
-        localStorage.setItem("user_id", loginData.user_id);
-        localStorage.setItem("user_email", loginData.email);
+        localStorage.setItem("user_id", authData.user.id);
+        localStorage.setItem("user_email", studentEmail);
         localStorage.setItem("userRole", "student");
         localStorage.setItem("userProfile", JSON.stringify({
           name: studentName,
@@ -136,23 +139,21 @@ const Signup = () => {
         }));
         localStorage.setItem("userFullName", studentName);
 
-        // Success toast
         toast({
           title: "Welcome to CUET Class Management!",
           description: "Your account has been created and you're now logged in.",
           duration: 3000,
         });
 
-        // Redirect to student dashboard
         navigate("/student/dashboard");
       } else {
-        // Signup succeeded but auto-login failed - redirect to login
+        // Email confirmation required
         toast({
-          title: "Signup successful!",
-          description: "Please log in with your new credentials.",
-          duration: 3000,
+          title: "Check your email",
+          description: "We've sent you a confirmation link. Please verify your email to continue.",
+          duration: 5000,
         });
-        setTimeout(() => navigate("/login"), 1500);
+        navigate("/login");
       }
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -194,48 +195,50 @@ const Signup = () => {
       // Extract department code from selection
       const deptCode = teacherDepartment.split(" - ")[0];
 
-      // Call backend API
-      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: teacherEmail,
-          password: teacherPassword,
-          full_name: teacherName,
-          role: "teacher",
-          dept_code: deptCode,
-        }),
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: teacherEmail,
+        password: teacherPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            full_name: teacherName,
+            role: 'teacher',
+          }
+        }
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Signup failed");
+      if (authError) {
+        if (authError.message.includes("User already registered")) {
+          throw new Error("An account with this email already exists. Please login instead.");
+        }
+        throw new Error(authError.message);
       }
 
-      // Auto-login after successful signup
-      const loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      if (!authData.user) {
+        throw new Error("Signup failed - please try again");
+      }
+
+      // Insert user profile into users table
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
           email: teacherEmail,
-          password: teacherPassword,
-        }),
-      });
+          full_name: teacherName,
+          role: 'teacher',
+          dept_code: deptCode,
+        });
 
-      const loginData = await loginResponse.json();
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+      }
 
-      if (loginResponse.ok && loginData.access_token) {
-        // Store auth data
+      // Check if email confirmation is required
+      if (authData.session) {
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("access_token", loginData.access_token);
-        localStorage.setItem("refresh_token", loginData.refresh_token);
-        localStorage.setItem("user_id", loginData.user_id);
-        localStorage.setItem("user_email", loginData.email);
+        localStorage.setItem("user_id", authData.user.id);
+        localStorage.setItem("user_email", teacherEmail);
         localStorage.setItem("userRole", "teacher");
         localStorage.setItem("userProfile", JSON.stringify({
           name: teacherName,
@@ -243,23 +246,20 @@ const Signup = () => {
         }));
         localStorage.setItem("userFullName", teacherName);
 
-        // Success toast
         toast({
           title: "Welcome to CUET Class Management!",
           description: "Your teacher account has been created and you're now logged in.",
           duration: 3000,
         });
 
-        // Redirect to teacher dashboard
         navigate("/teacher/dashboard");
       } else {
-        // Signup succeeded but auto-login failed - redirect to login
         toast({
-          title: "Signup successful!",
-          description: "Please log in with your new credentials.",
-          duration: 3000,
+          title: "Check your email",
+          description: "We've sent you a confirmation link. Please verify your email to continue.",
+          duration: 5000,
         });
-        setTimeout(() => navigate("/login"), 1500);
+        navigate("/login");
       }
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -435,21 +435,19 @@ const Signup = () => {
                       />
                     </div>
 
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
-                      >
-                        <span>{isLoading ? "Creating Account..." : "Create Student Account"}</span>
-                        {!isLoading && (
-                          <ArrowRight
-                            size={16}
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                          />
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
+                    >
+                      <span>{isLoading ? "Creating Account..." : "Create Student Account"}</span>
+                      {!isLoading && (
+                        <ArrowRight
+                          size={16}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
+                      )}
+                    </button>
                   </form>
                 </TabsContent>
 
@@ -479,11 +477,11 @@ const Signup = () => {
                         type="email"
                         value={teacherEmail}
                         onChange={(e) => setTeacherEmail(e.target.value)}
-                        placeholder="faculty@cuet.ac.bd"
+                        placeholder="your.name@cuet.ac.bd"
                         required
                         className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
-                      <p className="text-xs text-white/50">Please use your official CUET email</p>
+                      <p className="text-xs text-white/50">Use your official CUET email (@cuet.ac.bd)</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -500,7 +498,7 @@ const Signup = () => {
                           required
                           className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
-                        <p className="text-xs text-white/50">Min. 8 characters with letters & numbers</p>
+                        <p className="text-xs text-white/50">Min. 8 characters</p>
                       </div>
 
                       <div className="space-y-2">
@@ -539,21 +537,19 @@ const Signup = () => {
                       </select>
                     </div>
 
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
-                      >
-                        <span>{isLoading ? "Creating Account..." : "Create Teacher Account"}</span>
-                        {!isLoading && (
-                          <ArrowRight
-                            size={16}
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                          />
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
+                    >
+                      <span>{isLoading ? "Creating Account..." : "Create Teacher Account"}</span>
+                      {!isLoading && (
+                        <ArrowRight
+                          size={16}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
+                      )}
+                    </button>
                   </form>
                 </TabsContent>
               </Tabs>
