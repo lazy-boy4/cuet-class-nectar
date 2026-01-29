@@ -12,14 +12,14 @@ import {
   Calendar,
   Users,
   Plus,
-  UserPlus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { NeuCard, NeuCardContent } from "@/components/ui/neu-card";
+import { NeuButton } from "@/components/ui/neu-button";
+import { NeuProgress } from "@/components/ui/neu-progress";
+import { GlowBadge } from "@/components/ui/glow-badge";
+import { StatDisplay } from "@/components/ui/stat-display";
 import { fetchStudentDashboard } from "@/api/student";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
@@ -97,12 +97,12 @@ const StudentDashboard = () => {
 
   const presentCount = attendanceStatsData.total_attended;
   const absentCount = attendanceStatsData.total_classes - attendanceStatsData.total_attended;
-  const lateCount = 2; // Mock late count for demo
+  const lateCount = 2;
 
   const pieData = [
-    { name: "Present", value: presentCount || 42, color: "hsl(var(--chart-present))" },
-    { name: "Absent", value: absentCount || 6, color: "hsl(var(--chart-absent))" },
-    { name: "Late", value: lateCount, color: "hsl(var(--chart-late))" },
+    { name: "Present", value: presentCount || 42, color: "hsl(142, 76%, 36%)" },
+    { name: "Absent", value: absentCount || 6, color: "hsl(0, 84%, 60%)" },
+    { name: "Late", value: lateCount, color: "hsl(45, 93%, 47%)" },
   ].filter(item => item.value > 0);
 
   const totalClasses = attendanceStatsData.total_classes || 50;
@@ -117,34 +117,32 @@ const StudentDashboard = () => {
     });
   };
 
-  // Mock enrolled classes for design
   const mockEnrolledClasses = enrolledClasses.length > 0 ? enrolledClasses : [
     { id: "1", code: "CSE 301", name: "Advanced Algorithms", session: "2023-24", section: "A", attendance: 75 },
     { id: "2", code: "EEE 202", name: "Circuit Analysis II", session: "2023-24", section: "B", attendance: 50 },
   ];
 
-  // Mock notices for design
   const mockNotices = recentNotices.length > 0 ? recentNotices : [
-    { id: "1", title: "Exam Schedule Released", content: "Exam Schedule Released", created_at: "2023-09-31", type: "exam" },
-    { id: "2", title: "Holiday Announcement", content: "Holiday Announcement", created_at: "2023-03-23", type: "holiday" },
-    { id: "3", title: "System Maintenance Update", content: "System Maintenance Update", created_at: "2023-04-19", type: "system" },
+    { id: "1", title: "Exam Schedule Released", content: "Final exam schedule has been published", created_at: "2024-01-20", type: "exam" },
+    { id: "2", title: "Holiday Announcement", content: "Campus will be closed for spring break", created_at: "2024-01-18", type: "holiday" },
+    { id: "3", title: "System Maintenance", content: "Scheduled maintenance on Sunday", created_at: "2024-01-15", type: "system" },
   ];
 
   const quickActions = [
-    { title: "Profile Settings", icon: User, color: "bg-icon-blue/10 text-icon-blue", route: "/student/profile" },
-    { title: "Enroll in Classes", icon: List, color: "bg-icon-purple/10 text-icon-purple", route: "/student/enroll" },
-    { title: "Notice Board", icon: Bell, color: "bg-icon-orange/10 text-icon-orange", route: "/notices" },
-    { title: "Class Schedule", icon: Clock, color: "bg-icon-green/10 text-icon-green", route: "/student/schedule" },
-    { title: "My Classrooms", icon: Users, color: "bg-icon-teal/10 text-icon-teal", route: "/student/classrooms" },
-    { title: "Create Classroom", icon: Plus, color: "bg-icon-blue/10 text-icon-blue", route: "/student/classrooms/create" },
+    { title: "Profile", icon: User, color: "bg-info/10 text-info", route: "/student/profile" },
+    { title: "Enroll", icon: List, color: "bg-icon-purple/10 text-icon-purple", route: "/student/enroll" },
+    { title: "Notices", icon: Bell, color: "bg-icon-orange/10 text-icon-orange", route: "/notices" },
+    { title: "Schedule", icon: Clock, color: "bg-success/10 text-success", route: "/student/schedule" },
+    { title: "Classrooms", icon: Users, color: "bg-icon-teal/10 text-icon-teal", route: "/student/classrooms" },
+    { title: "Create", icon: Plus, color: "bg-info/10 text-info", route: "/student/classrooms/create" },
   ];
 
   const getNoticeIcon = (type: string) => {
     switch (type) {
       case "exam": return <Bell className="h-5 w-5 text-icon-orange" />;
-      case "holiday": return <Calendar className="h-5 w-5 text-icon-green" />;
+      case "holiday": return <Calendar className="h-5 w-5 text-success" />;
       case "system": return <Megaphone className="h-5 w-5 text-icon-purple" />;
-      default: return <FileText className="h-5 w-5 text-icon-blue" />;
+      default: return <FileText className="h-5 w-5 text-info" />;
     }
   };
 
@@ -154,85 +152,82 @@ const StudentDashboard = () => {
       description="View your academic progress and class information"
     >
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Column - Enrolled Classes & Attendance */}
+        {/* Left Column */}
         <div className="space-y-8 lg:col-span-2">
-          {/* Enrolled Classes Section */}
-          <section>
+          {/* Enrolled Classes */}
+          <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-foreground">Enrolled Classes</h2>
             <div className="space-y-4">
               {isDashboardLoading ? (
-                <Card className="border-border bg-secondary/50">
-                  <CardContent className="p-6">
-                    <p className="text-muted-foreground">Loading classes...</p>
-                  </CardContent>
-                </Card>
+                <NeuCard variant="raised" className="p-6">
+                  <div className="animate-pulse-soft text-muted-foreground">Loading classes...</div>
+                </NeuCard>
               ) : mockEnrolledClasses.length === 0 ? (
-                <Card className="border-border bg-secondary/50">
-                  <CardContent className="flex flex-col items-center justify-center p-8">
-                    <BookOpen className="mb-3 h-12 w-12 text-muted-foreground" />
+                <NeuCard variant="raised" className="p-8">
+                  <NeuCardContent className="p-0 flex flex-col items-center justify-center text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-luxe-black shadow-neu-inset">
+                      <BookOpen className="h-8 w-8 text-muted-foreground" />
+                    </div>
                     <p className="text-lg font-medium text-foreground">No enrolled classes</p>
-                    <p className="text-sm text-muted-foreground">You haven't enrolled in any classes yet.</p>
-                    <Button
-                      onClick={() => navigate("/student/enroll")}
-                      className="mt-4 bg-cuet-blue hover:bg-cuet-blue/90"
-                    >
+                    <p className="text-sm text-muted-foreground mb-4">You haven't enrolled in any classes yet.</p>
+                    <NeuButton variant="primary" onClick={() => navigate("/student/enroll")}>
                       Enroll Now
-                    </Button>
-                  </CardContent>
-                </Card>
+                    </NeuButton>
+                  </NeuCardContent>
+                </NeuCard>
               ) : (
                 mockEnrolledClasses.map((cls: any) => (
-                  <Card key={cls.id} className="border-border bg-secondary/50 transition-all hover:bg-secondary/70">
-                    <CardContent className="p-5">
+                  <NeuCard key={cls.id} variant="raised" hover className="p-5">
+                    <NeuCardContent className="p-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-icon-green/10">
-                            <BookOpen className="h-6 w-6 text-icon-green" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-luxe-black shadow-neu-inset">
+                            <BookOpen className="h-6 w-6 text-success" />
                           </div>
                           <div>
                             <h3 className="font-semibold text-foreground">
                               {cls.code}: {cls.name || cls.session}
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              {cls.name ? `Active in any classes` : `Section ${cls.section}`}
+                              Section {cls.section}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-foreground">
-                              Attendance ({cls.attendance || 75}%)
+                          <div className="text-right w-40">
+                            <p className="text-sm font-medium text-foreground mb-2">
+                              Attendance: {cls.attendance || 75}%
                             </p>
-                            <Progress 
+                            <NeuProgress 
                               value={cls.attendance || 75} 
-                              className="mt-1 h-2 w-32 bg-muted"
+                              variant={cls.attendance >= 75 ? "success" : cls.attendance >= 50 ? "warning" : "destructive"}
+                              className="h-2"
                             />
                           </div>
-                          <Button
+                          <NeuButton
                             variant="outline"
                             size="sm"
                             onClick={() => navigate(`/student/classes/${cls.id}`)}
-                            className="border-border bg-cuet-blue/10 text-cuet-blue hover:bg-cuet-blue/20"
                           >
-                            View Details
-                          </Button>
+                            View
+                          </NeuButton>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </NeuCardContent>
+                  </NeuCard>
                 ))
               )}
             </div>
           </section>
 
-          {/* Attendance Overview Section */}
-          <section>
+          {/* Attendance Overview */}
+          <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-foreground">Attendance Overview</h2>
-            <Card className="border-border bg-secondary/50">
-              <CardContent className="p-6">
+            <NeuCard variant="raised" className="p-6">
+              <NeuCardContent className="p-0">
                 <div className="flex flex-col items-center gap-8 md:flex-row">
                   {/* Donut Chart */}
-                  <div className="relative flex h-48 w-48 items-center justify-center">
+                  <div className="relative flex h-48 w-48 items-center justify-center flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -241,7 +236,7 @@ const StudentDashboard = () => {
                           cy="50%"
                           innerRadius={55}
                           outerRadius={75}
-                          paddingAngle={2}
+                          paddingAngle={3}
                           dataKey="value"
                           strokeWidth={0}
                         >
@@ -253,96 +248,93 @@ const StudentDashboard = () => {
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-4xl font-bold text-foreground">{overallPercentage}%</span>
-                      <span className="text-sm text-muted-foreground">Overall Attendance</span>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Overall</span>
                     </div>
                   </div>
 
-                  {/* Stats Grid */}
+                  {/* Stats */}
                   <div className="flex flex-1 flex-wrap justify-center gap-4">
-                    <div className="flex min-w-[120px] flex-col items-center rounded-xl bg-success/10 px-6 py-4">
-                      <span className="text-3xl font-bold text-success">{presentCount || 42}</span>
-                      <span className="text-sm text-success/80">Present: {presentCount || 42}</span>
-                    </div>
-                    <div className="flex min-w-[120px] flex-col items-center rounded-xl bg-destructive/10 px-6 py-4">
-                      <span className="text-3xl font-bold text-destructive">{absentCount || 6}</span>
-                      <span className="text-sm text-destructive/80">Absent: {absentCount || 6}</span>
-                    </div>
-                    <div className="flex min-w-[120px] flex-col items-center rounded-xl bg-warning/10 px-6 py-4">
-                      <span className="text-3xl font-bold text-warning">{lateCount}</span>
-                      <span className="text-sm text-warning/80">Late: {lateCount}</span>
-                    </div>
+                    <StatDisplay value={presentCount || 42} label="Present" variant="success" />
+                    <StatDisplay value={absentCount || 6} label="Absent" variant="destructive" />
+                    <StatDisplay value={lateCount} label="Late" variant="warning" />
                   </div>
                 </div>
                 <p className="mt-6 text-center text-sm text-muted-foreground">
                   Total Classes: {totalClasses}
                 </p>
-              </CardContent>
-            </Card>
+              </NeuCardContent>
+            </NeuCard>
           </section>
         </div>
 
-        {/* Right Column - Quick Actions & Recent Notices */}
+        {/* Right Column */}
         <div className="space-y-8">
-          {/* Quick Actions Section */}
-          <section>
+          {/* Quick Actions */}
+          <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {quickActions.map((action) => (
-                <Card
+                <NeuCard
                   key={action.title}
-                  className="cursor-pointer border-border bg-secondary/50 transition-all hover:bg-secondary/70 hover:shadow-md"
+                  variant="raised"
+                  hover
+                  className="p-4"
                   onClick={() => navigate(action.route)}
                 >
-                  <CardContent className="flex flex-col items-start p-5">
+                  <NeuCardContent className="p-0 flex flex-col items-start">
                     <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${action.color}`}>
                       <action.icon className="h-5 w-5" />
                     </div>
                     <span className="text-sm font-medium text-foreground">{action.title}</span>
-                  </CardContent>
-                </Card>
+                  </NeuCardContent>
+                </NeuCard>
               ))}
             </div>
           </section>
 
-          {/* Recent Notices Section */}
-          <section>
+          {/* Recent Notices */}
+          <section className="reveal">
             <h2 className="mb-4 text-xl font-semibold text-foreground">Recent Notices</h2>
-            <Card className="border-border bg-secondary/50">
-              <CardContent className="p-0">
+            <NeuCard variant="raised" className="overflow-hidden">
+              <NeuCardContent className="p-0">
                 {mockNotices.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-8">
                     <Bell className="mb-3 h-10 w-10 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">No notices available</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
+                  <div className="divide-y divide-white/[0.06]">
                     {mockNotices.slice(0, 3).map((notice: any) => (
-                      <div key={notice.id} className="flex items-start gap-4 p-4 transition-colors hover:bg-secondary/70">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      <div 
+                        key={notice.id} 
+                        className="flex items-start gap-4 p-4 transition-colors hover:bg-secondary/50 cursor-pointer"
+                        onClick={() => navigate("/notices")}
+                      >
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-luxe-black shadow-neu-inset">
                           {getNoticeIcon(notice.type || "default")}
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-foreground">{notice.title || notice.content}</h4>
-                          <p className="text-sm text-muted-foreground">{notice.content}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-foreground truncate">{notice.title}</h4>
+                          <p className="text-sm text-muted-foreground truncate">{notice.content}</p>
                         </div>
-                        <span className="whitespace-nowrap text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatDate(notice.created_at)}
                         </span>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="border-t border-border p-4">
-                  <Button
-                    variant="link"
-                    className="w-full text-cuet-blue hover:text-cuet-blue/80"
+                <div className="border-t border-white/[0.06] p-4">
+                  <NeuButton
+                    variant="ghost"
+                    className="w-full text-info hover:text-info/80"
                     onClick={() => navigate("/notices")}
                   >
                     View All Notices
-                  </Button>
+                  </NeuButton>
                 </div>
-              </CardContent>
-            </Card>
+              </NeuCardContent>
+            </NeuCard>
           </section>
         </div>
       </div>

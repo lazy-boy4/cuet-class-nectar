@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, ChevronRight, LogOut, User, Search } from "lucide-react";
+import { Menu, X, LogOut, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NeuButton } from "@/components/ui/neu-button";
 
 const Header = () => {
   const { toast } = useToast();
@@ -20,7 +21,6 @@ const Header = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{ name?: string; picture?: string } | null>(null);
 
-  // Function to check auth state
   const checkUserAuth = useCallback(() => {
     const storedRole = localStorage.getItem("userRole") || sessionStorage.getItem("userRole");
     const storedToken = localStorage.getItem("access_token") || sessionStorage.getItem("access_token");
@@ -44,17 +44,11 @@ const Header = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 10);
     };
 
-    // Check auth on mount
     checkUserAuth();
 
-    // Listen for storage changes (for cross-tab sync)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "access_token" || e.key === "userRole" || e.key === "userProfile" || e.key === "isLoggedIn") {
         checkUserAuth();
@@ -70,14 +64,12 @@ const Header = () => {
     };
   }, [checkUserAuth]);
 
-  // Re-check auth state when location changes (navigation)
   useEffect(() => {
     checkUserAuth();
   }, [location.pathname, checkUserAuth]);
 
   const handleLogout = () => {
     try {
-      // Clear all auth data
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_id");
@@ -114,7 +106,6 @@ const Header = () => {
         duration: 3000,
       });
 
-      // Navigate to home page
       navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -152,41 +143,33 @@ const Header = () => {
     }
   };
 
-  const getUserInitials = () => {
-    if (userProfile?.name) {
-      return userProfile.name
-        .split(" ")
-        .map(name => name.charAt(0))
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return "U";
-  };
-
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${isScrolled
-        ? "bg-cuet-navy/90 shadow-md backdrop-blur-md"
-        : "bg-transparent"
-        }`}
+      className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
+        isScrolled
+          ? "bg-background/95 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_4px_30px_rgba(0,0,0,0.3)]"
+          : "bg-transparent"
+      }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <div className="flex items-center space-x-2">
-          <button onClick={handleLogoClick} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <img
-              src="/static/cuet logo.png"
-              alt="CUET Logo"
-              className="h-10 w-auto"
-            />
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-white">
-                CUET Class Management
-              </h1>
-            </div>
-          </button>
-        </div>
+        {/* Logo */}
+        <button
+          onClick={handleLogoClick}
+          className="flex items-center space-x-3 group transition-opacity hover:opacity-80"
+        >
+          <img
+            src="/static/cuet logo.png"
+            alt="CUET Logo"
+            className="h-10 w-auto"
+          />
+          <div className="hidden sm:block">
+            <h1 className="text-lg font-semibold text-foreground tracking-tight">
+              CUET <span className="text-muted-foreground font-normal">Class Management</span>
+            </h1>
+          </div>
+        </button>
 
+        {/* Desktop Navigation */}
         <nav className="hidden items-center space-x-8 md:flex">
           {isLoggedIn ? (
             <>
@@ -205,18 +188,15 @@ const Header = () => {
                   Dashboard
                 </Link>
               )}
-              <Link to="/search" className="navbar-link flex items-center space-x-1">
+              <Link to="/search" className="navbar-link flex items-center space-x-1.5">
                 <Search className="w-4 h-4" />
                 <span>Search</span>
               </Link>
-              {userProfile?.name && (
-                <span className="hidden md:block text-white font-medium text-sm mr-2">
-                  {userProfile.name}
-                </span>
-              )}
+
+              {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 border-2 border-white/20 hover:border-white/40 transition-colors overflow-hidden">
+                  <button className="flex items-center justify-center w-10 h-10 rounded-full bg-card border border-white/[0.08] shadow-neu-raised-sm hover:border-white/[0.15] transition-all overflow-hidden">
                     {userProfile?.picture ? (
                       <img
                         src={userProfile.picture}
@@ -224,34 +204,43 @@ const Header = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="w-5 h-5 text-white" />
+                      <User className="w-5 h-5 text-muted-foreground" />
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-56 bg-card border-white/[0.08] shadow-neu-raised"
+                >
                   {userProfile?.name && (
                     <>
                       <div className="flex items-center gap-3 p-3">
                         <div className="flex flex-col space-y-0.5">
-                          <p className="text-sm font-medium leading-none text-gray-900">
+                          <p className="text-sm font-medium leading-none text-foreground">
                             {userProfile.name}
                           </p>
                           {userRole && (
-                            <p className="text-xs leading-none text-gray-500 capitalize">
+                            <p className="text-xs leading-none text-muted-foreground capitalize">
                               {userRole}
                             </p>
                           )}
                         </div>
                       </div>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className="bg-white/[0.08]" />
                     </>
                   )}
-                  <DropdownMenuItem onClick={handleProfileClick}>
+                  <DropdownMenuItem 
+                    onClick={handleProfileClick}
+                    className="cursor-pointer hover:bg-secondary"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuSeparator className="bg-white/[0.08]" />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="cursor-pointer hover:bg-secondary text-destructive focus:text-destructive"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Log Out
                   </DropdownMenuItem>
@@ -269,20 +258,25 @@ const Header = () => {
               <a href="#contact" className="navbar-link">
                 Contact
               </a>
-              <div className="flex space-x-3">
-                <Link to="/login" className="btn-secondary">
-                  Log In
+              <div className="flex items-center space-x-3">
+                <Link to="/login">
+                  <NeuButton variant="outline" size="sm">
+                    Log In
+                  </NeuButton>
                 </Link>
-                <Link to="/signup" className="btn-primary">
-                  Sign Up
+                <Link to="/signup">
+                  <NeuButton variant="primary" size="sm">
+                    Sign Up
+                  </NeuButton>
                 </Link>
               </div>
             </>
           )}
         </nav>
 
+        {/* Mobile Menu Button */}
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-white/5 text-white backdrop-blur-sm md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-md bg-card border border-white/[0.08] shadow-neu-raised-sm text-foreground md:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle Menu"
         >
@@ -292,118 +286,115 @@ const Header = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`absolute w-full transform bg-cuet-navy/95 px-4 py-4 backdrop-blur-lg transition-all duration-300 ease-in-out md:hidden ${isMenuOpen
-          ? "translate-y-0 opacity-100"
-          : "-translate-y-full opacity-0"
-          }`}
+        className={`absolute w-full transform bg-background/98 backdrop-blur-xl border-b border-white/[0.06] px-4 py-4 transition-all duration-300 ease-out md:hidden ${
+          isMenuOpen
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
+        }`}
       >
-        <nav className="flex flex-col space-y-4">
+        <nav className="flex flex-col space-y-2">
           {isLoggedIn ? (
             <>
               {userProfile?.name && (
-                <div className="py-2 text-white font-medium border-b border-white/10 mb-2">
+                <div className="py-3 px-2 text-foreground font-medium border-b border-white/[0.08] mb-2">
                   {userProfile.name}
                 </div>
               )}
               {userRole === "admin" && (
                 <Link
                   to="/admin/dashboard"
-                  className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                  className="flex items-center py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>Dashboard</span>
-                  <ChevronRight size={16} />
+                  Dashboard
                 </Link>
               )}
               {userRole === "teacher" && (
                 <Link
                   to="/teacher/dashboard"
-                  className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                  className="flex items-center py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>Dashboard</span>
-                  <ChevronRight size={16} />
+                  Dashboard
                 </Link>
               )}
               {(userRole === "student" || userRole === "cr") && (
                 <Link
                   to="/student/dashboard"
-                  className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                  className="flex items-center py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>Dashboard</span>
-                  <ChevronRight size={16} />
+                  Dashboard
                 </Link>
               )}
               <Link
                 to="/search"
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                className="flex items-center gap-2 py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Search size={16} />
-                <span>Search</span>
+                Search
               </Link>
               <button
                 onClick={() => {
                   handleProfileClick();
                   setIsMenuOpen(false);
                 }}
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white text-left"
+                className="flex items-center gap-2 py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left"
               >
                 <User size={16} />
-                <span>Profile</span>
+                Profile
               </button>
               <button
                 onClick={() => {
                   handleLogout();
                   setIsMenuOpen(false);
                 }}
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white text-left"
+                className="flex items-center gap-2 py-3 px-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors text-left"
               >
                 <LogOut size={16} />
-                <span>Log Out</span>
+                Log Out
               </button>
             </>
           ) : (
             <>
               <a
                 href="#about"
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                className="py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <span>About</span>
-                <ChevronRight size={16} />
+                About
               </a>
               <a
                 href="#features"
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                className="py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <span>Features</span>
-                <ChevronRight size={16} />
+                Features
               </a>
               <a
                 href="#contact"
-                className="flex items-center space-x-1 py-2 text-white/80 hover:text-white"
+                className="py-3 px-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <span>Contact</span>
-                <ChevronRight size={16} />
+                Contact
               </a>
-              <div className="flex flex-col space-y-3 pt-2">
+              <div className="flex flex-col space-y-2 pt-4 border-t border-white/[0.08]">
                 <Link
                   to="/login"
-                  className="w-full rounded-md border border-white/10 bg-white/5 py-2 text-center text-white backdrop-blur-sm"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Log In
+                  <NeuButton variant="outline" className="w-full">
+                    Log In
+                  </NeuButton>
                 </Link>
                 <Link
                   to="/signup"
-                  className="w-full rounded-md bg-[#1E88E5] py-2 text-center text-white"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Sign Up
+                  <NeuButton variant="primary" className="w-full">
+                    Sign Up
+                  </NeuButton>
                 </Link>
               </div>
             </>
