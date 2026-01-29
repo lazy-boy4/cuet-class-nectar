@@ -4,14 +4,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NeuButton } from "@/components/ui/neu-button";
+import { NeuCard, NeuCardContent } from "@/components/ui/neu-card";
+import { NeuInput } from "@/components/ui/neu-input";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,12 +24,10 @@ const Login = () => {
     document.title = "Login - CUET Class Management System";
   }, []);
 
-  // Check if already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Get user role from users table
         const { data: userData } = await supabase
           .from('users')
           .select('role')
@@ -58,7 +60,6 @@ const Login = () => {
     setError("");
 
     try {
-      // Sign in with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -72,7 +73,6 @@ const Login = () => {
         throw new Error("Login failed - no session created");
       }
 
-      // Fetch user profile from users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -89,7 +89,6 @@ const Login = () => {
           picture: userData.picture_url || "",
         };
 
-        // Store profile data in localStorage
         const storage = rememberMe ? localStorage : sessionStorage;
         storage.setItem("isLoggedIn", "true");
         storage.setItem("user_id", authData.user.id);
@@ -102,7 +101,6 @@ const Login = () => {
         storage.setItem("userSection", userData.section || "");
         storage.setItem("userStudentId", userData.student_id || "");
       } else {
-        // Fallback: infer role from email
         if (email.includes("@student.cuet.ac.bd")) {
           userRole = "student";
         } else if (email.includes("@cuet.ac.bd")) {
@@ -151,98 +149,127 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 bg-cuet-navy pt-16">
-        <div className="container mx-auto px-4 py-12">
+      <main className="flex-1 pt-16">
+        {/* Background mesh */}
+        <div className="absolute inset-0 hero-mesh opacity-30 pointer-events-none" />
+        
+        <div className="container relative z-10 mx-auto px-4 py-12">
           <div className="mx-auto max-w-md">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
-              <div className="mb-6 text-center">
-                <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
-                <p className="mt-2 text-white/70">
-                  Login to access your CUET dashboard
-                </p>
-              </div>
-
-              {error && (
-                <div className="mb-6 rounded-md bg-red-500/10 p-4 text-red-400">
-                  {error}
+            <NeuCard variant="raised" className="p-8">
+              <NeuCardContent className="p-0">
+                {/* Header */}
+                <div className="mb-8 text-center">
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                    Welcome Back
+                  </h1>
+                  <p className="mt-2 text-muted-foreground">
+                    Login to access your CUET dashboard
+                  </p>
                 </div>
-              )}
 
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-white/70">
-                    CUET Email
-                  </label>
-                  <input
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-6 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={handleLogin} className="space-y-6">
+                  <NeuInput
                     id="email"
                     type="email"
+                    label="CUET Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your.email@cuet.ac.bd"
                     required
-                    className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="password" className="block text-sm font-medium text-white/70">
-                      Password
-                    </label>
-                    <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
-                      Forgot password?
-                    </Link>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">
+                        Password
+                      </label>
+                      <Link to="/forgot-password" className="text-sm text-info hover:text-info/80 transition-colors">
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="flex h-11 w-full rounded-md px-4 py-3 pr-10 text-base transition-all duration-150 bg-luxe-black border border-white/[0.08] shadow-neu-inset text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-info focus:ring-2 focus:ring-info/10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full rounded-md border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+
+                  {/* Remember Me */}
+                  <div className="flex items-center">
+                    <div 
+                      onClick={() => setRememberMe(!rememberMe)}
+                      className={`flex h-5 w-5 cursor-pointer items-center justify-center rounded border transition-all ${
+                        rememberMe 
+                          ? 'bg-info border-info' 
+                          : 'border-white/[0.15] bg-luxe-black shadow-neu-inset'
+                      }`}
+                    >
+                      {rememberMe && (
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <label 
+                      htmlFor="remember-me" 
+                      className="ml-3 block text-sm text-muted-foreground cursor-pointer"
+                      onClick={() => setRememberMe(!rememberMe)}
+                    >
+                      Remember me
+                    </label>
+                  </div>
+
+                  {/* Submit Button */}
+                  <NeuButton
+                    type="submit"
+                    variant="primary"
+                    disabled={isLoading}
+                    className="w-full group"
+                  >
+                    <span>{isLoading ? "Logging in..." : "Login"}</span>
+                    {!isLoading && (
+                      <ArrowRight
+                        size={18}
+                        className="transition-transform duration-200 group-hover:translate-x-1"
+                      />
+                    )}
+                  </NeuButton>
+                </form>
+
+                {/* Footer */}
+                <div className="mt-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Don't have an account?{" "}
+                    <Link to="/signup" className="text-info hover:text-info/80 font-medium transition-colors">
+                      Sign up
+                    </Link>
+                  </p>
                 </div>
-
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-white/10 bg-white/5 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-white/70">
-                    Remember me
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="group flex w-full items-center justify-center space-x-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 font-medium text-white transition-all hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
-                >
-                  <span>{isLoading ? "Logging in..." : "Login"}</span>
-                  {!isLoading && (
-                    <ArrowRight
-                      size={16}
-                      className="transition-transform duration-300 group-hover:translate-x-1"
-                    />
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-white/70">
-                  Don't have an account?{" "}
-                  <Link to="/signup" className="text-blue-400 hover:text-blue-300">
-                    Sign up
-                  </Link>
-                </p>
-              </div>
-            </div>
+              </NeuCardContent>
+            </NeuCard>
           </div>
         </div>
       </main>

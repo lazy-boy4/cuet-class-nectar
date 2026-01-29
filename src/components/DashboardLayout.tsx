@@ -11,19 +11,25 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children, title, description }: DashboardLayoutProps) => {
-  // Initialize scroll animation
   useScrollAnimation();
   
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="flex-1 bg-cuet-navy pt-20 pb-12">
+      <main className="flex-1 pt-20 pb-12">
         <div className="container mx-auto px-4 py-8">
+          {/* Page Header */}
           <div className="mb-8 reveal">
-            <h1 className="text-3xl font-bold text-white md:text-4xl">{title}</h1>
+            <h1 className="text-3xl font-bold text-foreground md:text-4xl tracking-tight">
+              {title}
+            </h1>
             {description && (
-              <p className="mt-2 text-lg text-white/70">{description}</p>
+              <p className="mt-2 text-lg text-muted-foreground">
+                {description}
+              </p>
             )}
+            {/* Subtle gradient underline */}
+            <div className="mt-4 h-px w-24 bg-gradient-to-r from-info/50 to-transparent" />
           </div>
           {children}
         </div>

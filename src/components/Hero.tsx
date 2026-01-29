@@ -2,51 +2,90 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { NeuButton } from "@/components/ui/neu-button";
 
 const Hero = () => {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
+      {/* Mesh gradient background */}
+      <div className="absolute inset-0 hero-mesh" />
+      
+      {/* Subtle grid pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1587652327825-f924c0f21251?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
         }}
-      ></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-cuet-dark/70 via-cuet-dark/80 to-cuet-navy z-0"></div>
+      />
 
+      {/* Floating geometric shapes */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-info/5 blur-3xl animate-float" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-icon-purple/5 blur-3xl animate-float delay-200" />
+      
+      {/* Content */}
       <div className="container relative z-10 px-4 py-32 text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
-          Welcome to CUET's
-          <span className="mt-2 block bg-gradient-to-r from-[#60a5fa] to-[#a78bfa] bg-clip-text text-transparent">
-            Class Management System
+        {/* Badge */}
+        <div className="mb-6 inline-flex items-center rounded-full bg-card px-4 py-1.5 border border-white/[0.08] shadow-neu-raised-sm">
+          <span className="text-xs font-medium text-muted-foreground">
+            CUET Class Management System
+          </span>
+        </div>
+
+        {/* Main heading */}
+        <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+          The Future of
+          <span className="block mt-2 gradient-platinum">
+            Academic Management
           </span>
         </h1>
-        <p className="mx-auto mb-8 max-w-2xl text-lg text-white/80 md:text-xl">
+        
+        {/* Subheading */}
+        <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
           Streamlining education for students and faculty at Chittagong
-          University of Engineering and Technology
+          University of Engineering and Technology with a premium, modern platform.
         </p>
-        <div className="mx-auto flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-          <Link
-            to="/login"
-            className="group flex w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] px-8 py-3 text-white transition-all duration-300 hover:from-[#1d4ed8] hover:to-[#1e40af] sm:w-auto"
-          >
-            <span>Get Started</span>
-            <ArrowRight
-              size={16}
-              className="transition-transform duration-300 group-hover:translate-x-1"
-            />
+        
+        {/* CTA Buttons */}
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link to="/login">
+            <NeuButton variant="primary" size="lg" className="group">
+              <span>Get Started</span>
+              <ArrowRight
+                size={18}
+                className="transition-transform duration-200 group-hover:translate-x-1"
+              />
+            </NeuButton>
           </Link>
-          <a
-            href="#about"
-            className="w-full rounded-lg border border-white/20 bg-white/5 px-8 py-3 text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 sm:w-auto"
-          >
-            Learn More
+          <a href="#about">
+            <NeuButton variant="outline" size="lg">
+              Learn More
+            </NeuButton>
           </a>
+        </div>
+
+        {/* Stats row */}
+        <div className="mt-20 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+          {[
+            { value: "12+", label: "Departments" },
+            { value: "5000+", label: "Students" },
+            { value: "200+", label: "Faculty Members" },
+          ].map(({ value, label }, idx) => (
+            <div key={idx} className="text-center">
+              <div className="text-3xl font-bold text-foreground md:text-4xl">
+                {value}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {label}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cuet-navy to-transparent"></div>
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 };
